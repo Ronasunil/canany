@@ -1,0 +1,35 @@
+// Prisma schema — the single source of truth for the database.
+// Field names are kept snake_case to match the columns the app already reads,
+// so swapping pg -> Prisma stays contained to the data layer.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// The one ledger table. Maps to "asks".
+model Ask {
+  id          Int       @id @default(autoincrement())
+  ask         String
+  asker       String
+  effort      String? // free-form estimate: '1 hr', '2 days', 'a month'
+  urgency     String? // 'now' | 'EOD' | 'no-rush' (validated in app code)
+  status      String    @default("open") // 'open' | 'scoping' | 'claimed' | 'done'
+  claimer     String?
+  outcome     String? // required to reach 'done'
+  thread_link String? // deep link back to the Telegram thread
+  tg_chat_id  String? // Telegram ids stored as text (identifiers, never math)
+  tg_topic_id String?
+  tg_msg_id   String? // the original ask message
+  tg_card_id  String? // the bot's reply card we keep editing
+  created_at  DateTime  @default(now())
+  claimed_at  DateTime?
+  closed_at   DateTime?
+
+  @@index([status])
+  @@index([created_at])
+  @@map("asks")
+}
