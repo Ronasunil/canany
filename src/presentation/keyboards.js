@@ -59,9 +59,10 @@ function keyboardFor(row) {
   if (row.status === 'done') return { inline_keyboard: [] };
 
   if (row.status === 'claimed') {
-    return {
-      inline_keyboard: [effortRow(id), [customEffortBtn(id)], [doneBtn(id)]],
-    };
+    const rows = [];
+    if (!row.urgency) rows.push(urgencyRow(id)); // asker can still set it post-claim
+    rows.push(effortRow(id), [customEffortBtn(id)], [doneBtn(id)]);
+    return { inline_keyboard: rows };
   }
 
   // open / scoping

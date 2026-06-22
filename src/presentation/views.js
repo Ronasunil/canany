@@ -10,17 +10,19 @@ function esc(s) {
     .replace(/>/g, '&gt;');
 }
 
-// Pad/truncate to exactly n characters.
+// Count/slice by code points, not UTF-16 units, so an emoji or other
+// astral-plane char counts as one cell and truncation never splits a surrogate
+// pair into a � replacement char.
 function pad(s, n) {
-  s = String(s == null ? '' : s);
-  if (s.length > n) return s.slice(0, n - 1) + '…';
-  return s.padEnd(n);
+  const chars = Array.from(String(s == null ? '' : s));
+  if (chars.length > n) return chars.slice(0, n - 1).join('') + '…';
+  return chars.join('') + ' '.repeat(n - chars.length);
 }
 
-// Truncate to at most n characters (no padding) — for the free-width last column.
+// Truncate to at most n code points (no padding) — for the free-width last column.
 function clip(s, n) {
-  s = String(s == null ? '' : s);
-  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+  const chars = Array.from(String(s == null ? '' : s));
+  return chars.length > n ? chars.slice(0, n - 1).join('') + '…' : chars.join('');
 }
 
 function preTable(headerLine, bodyLines) {
