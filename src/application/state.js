@@ -3,4 +3,8 @@
 // The callback handler sets it (on ✅ Done); the message handler reads/clears it.
 const pendingOutcome = new Map();
 
-module.exports = { pendingOutcome };
+// Custom-effort capture: `${chatId}:${userId}` -> askId awaiting a typed effort.
+// Set by the callback handler (on ✏️ Custom effort); read/cleared by the message handler.
+const pendingEffort = new Map();
+
+module.exports = { pendingOutcome, pendingEffort };

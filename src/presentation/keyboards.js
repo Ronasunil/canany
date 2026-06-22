@@ -47,20 +47,21 @@ function effortRow(askId) {
 const claimBtn = (id) => ({ text: '✋ Claim', callback_data: `claim:${id}` });
 const scopeBtn = (id) => ({ text: '🔍 Scope', callback_data: `scope:${id}` });
 const doneBtn = (id) => ({ text: '✅ Done', callback_data: `done:${id}` });
+const customEffortBtn = (id) => ({ text: '✏️ Custom effort', callback_data: `eff:${id}:custom` });
 
 // The card's keyboard depends on where the ask is in its lifecycle:
 //  - open/scoping  → asker picks urgency (until set), plus Claim/Scope
-//  - claimed       → Claim is gone; claimer picks effort (until set), plus Done
+//  - claimed       → Claim is gone; claimer picks effort (presets or a typed
+//                    custom amount, and can keep refining it), plus Done
 //  - done          → no buttons
 function keyboardFor(row) {
   const id = row.id;
   if (row.status === 'done') return { inline_keyboard: [] };
 
   if (row.status === 'claimed') {
-    const rows = [];
-    if (!row.effort) rows.push(effortRow(id));
-    rows.push([doneBtn(id)]);
-    return { inline_keyboard: rows };
+    return {
+      inline_keyboard: [effortRow(id), [customEffortBtn(id)], [doneBtn(id)]],
+    };
   }
 
   // open / scoping

@@ -3,7 +3,7 @@
 const db = require('../../infrastructure/db/asksRepository');
 const { URGENCIES, EFFORTS } = require('../../domain/constants');
 const { displayName } = require('../../presentation/keyboards');
-const { pendingOutcome } = require('../state');
+const { pendingOutcome, pendingEffort } = require('../state');
 const { refreshCard } = require('../cards');
 
 function register(bot) {
@@ -28,8 +28,8 @@ function register(bot) {
       }
 
       // Claimer sets effort — only after they've claimed it, only by the claimer.
+      // A preset value sets it directly; 'custom' asks them to type an exact amount.
       if (action === 'eff') {
-        if (!EFFORTS.includes(value)) return void bot.answerCallbackQuery(q.id);
         const ask = await db.getAsk(id);
         if (!ask) return void bot.answerCallbackQuery(q.id, { text: 'Ask not found.' });
         if (ask.status !== 'claimed') {
@@ -38,6 +38,19 @@ function register(bot) {
         if (ask.claimer !== actor) {
           return void bot.answerCallbackQuery(q.id, { text: 'Only the claimer can set effort.', show_alert: true });
         }
+
+        if (value === 'custom') {
+          const chatId = q.message.chat.id;
+          pendingEffort.set(`${chatId}:${q.from.id}`, id);
+          await bot.answerCallbackQuery(q.id);
+          return void bot.sendMessage(
+            chatId,
+            `@${actor} reply to this with the effort for ask #${id} (e.g. "3 days", "2.5 hrs").`,
+            { message_thread_id: q.message.message_thread_id, reply_markup: { force_reply: true, selective: true } }
+          );
+        }
+
+        if (!EFFORTS.includes(value)) return void bot.answerCallbackQuery(q.id);
         const row = await db.setEffort(id, value);
         await bot.answerCallbackQuery(q.id, { text: `effort: ${value}` });
         return void refreshCard(bot, row);

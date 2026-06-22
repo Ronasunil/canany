@@ -17,6 +17,12 @@ function pad(s, n) {
   return s.padEnd(n);
 }
 
+// Truncate to at most n characters (no padding) — for the free-width last column.
+function clip(s, n) {
+  s = String(s == null ? '' : s);
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
+
 function preTable(headerLine, bodyLines) {
   return '<pre>' + esc([headerLine, ...bodyLines].join('\n')) + '</pre>';
 }
@@ -42,17 +48,18 @@ function statusCell(s) {
 }
 
 // ---- /board ----
-// Compact scan grid (# ASK URG EFF STATUS WHO). The full record — asker,
-// outcome text, clickable thread link — lives on each ask's card (see card()).
-// No outcome column: '✓ done' already implies an outcome was captured.
+// Scan grid (# ASK URG EFF STATUS WHO OUTCOME). OUTCOME is the free-width last
+// column (clipped); the full record — asker, outcome text, clickable thread
+// link — also lives on each ask's card (see card()). EFF is wide enough for a
+// typed custom effort like '12 hours'.
 function board(rows) {
   if (!rows.length) {
     return '📋 <b>canany — board</b>\n\nNo asks yet. Post one with #ask to get started.';
   }
-  const W = [3, 18, 7, 6, 9];
-  const header = cols(['#', 'ASK', 'URG', 'EFF', 'STATUS', 'WHO'], W);
+  const W = [3, 16, 7, 9, 9, 8];
+  const header = cols(['#', 'ASK', 'URG', 'EFF', 'STATUS', 'WHO', 'OUTCOME'], W);
   const body = rows.map((r) =>
-    cols([id(r.id), r.ask, r.urgency || '—', r.effort || '—', statusCell(r.status), who(r.claimer)], W)
+    cols([id(r.id), r.ask, r.urgency || '—', r.effort || '—', statusCell(r.status), who(r.claimer), clip(r.outcome || '—', 28)], W)
   );
   const counts = STATUS_ORDER
     .map((s) => `${rows.filter((r) => r.status === s).length} ${s}`)

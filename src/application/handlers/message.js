@@ -5,7 +5,7 @@ const config = require('../../config');
 const db = require('../../infrastructure/db/asksRepository');
 const views = require('../../presentation/views');
 const { displayName, threadLink, keyboardFor, threadOpts } = require('../../presentation/keyboards');
-const { pendingOutcome } = require('../state');
+const { pendingOutcome, pendingEffort } = require('../state');
 const { refreshCard } = require('../cards');
 
 const ASK_PREFIX = config.behavior.askPrefix;
@@ -19,7 +19,19 @@ function register(bot) {
       const chatId = msg.chat.id;
       const userKey = `${chatId}:${msg.from.id}`;
 
-      // 1) Outcome capture — the user's reply that closes a 'done' ask.
+      // 1) Custom-effort capture — the claimer's reply with an exact amount
+      //    (set after tapping ✏️ Custom effort). Skip commands / new asks.
+      if (pendingEffort.has(userKey) && !text.startsWith('/') && !text.startsWith(ASK_PREFIX)) {
+        const askId = pendingEffort.get(userKey);
+        pendingEffort.delete(userKey);
+        const effort = text.trim().slice(0, 40);
+        const row = await db.setEffort(askId, effort);
+        await refreshCard(bot, row);
+        await bot.sendMessage(chatId, `✅ Effort for ask #${askId}: ${effort}`, threadOpts(msg));
+        return;
+      }
+
+      // 2) Outcome capture — the user's reply that closes a 'done' ask.
       //    (Skip if they're clearly doing something else: a command or a new ask.)
       if (pendingOutcome.has(userKey) && !text.startsWith('/') && !text.startsWith(ASK_PREFIX)) {
         const askId = pendingOutcome.get(userKey);
@@ -34,10 +46,10 @@ function register(bot) {
         return;
       }
 
-      // 2) Slash commands are routed by ../commands.js — ignore them here.
+      // 3) Slash commands are routed by ../commands.js — ignore them here.
       if (text.startsWith('/')) return;
 
-      // 3) New ask — any message that starts with the prefix (in a group or DM).
+      // 4) New ask — any message that starts with the prefix (in a group or DM).
       if (!text.startsWith(ASK_PREFIX)) return;
 
       const askText = text.slice(ASK_PREFIX.length).trim() || text;
