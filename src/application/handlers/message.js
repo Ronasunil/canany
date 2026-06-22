@@ -34,7 +34,7 @@ function register(bot) {
           const row = await db.setEffort(askId, effort);
           if (row) {
             await refreshCard(bot, row);
-            await bot.sendMessage(chatId, `✅ Effort for ask #${askId}: ${effort}`, threadOpts(msg));
+            await bot.sendMessage(chatId, `✅ Effort for ask ${askId} is ${effort}`, threadOpts(msg));
           } else {
             await bot.sendMessage(chatId, `Couldn't set effort for ask #${askId} — it may have changed.`, threadOpts(msg));
           }
