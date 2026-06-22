@@ -22,7 +22,12 @@ const config = Object.freeze({
   },
   behavior: {
     askPrefix: process.env.ASK_PREFIX || '#ask',
-    stalledDays: Number(process.env.STALLED_DAYS || 2),
+    // Fall back to 2 if STALLED_DAYS is missing or not a positive number,
+    // so a typo can't silently break /stalled with a NaN date cutoff.
+    stalledDays: (() => {
+      const n = Number(process.env.STALLED_DAYS);
+      return Number.isFinite(n) && n > 0 ? n : 2;
+    })(),
   },
 });
 
