@@ -1,0 +1,31 @@
+{
+  "name": "canany",
+  "version": "1.0.0",
+  "description": "Can Anyone — an open asks board that lives entirely inside Telegram (bot + PostgreSQL, no Activepieces/Baserow/Docker)",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "db:dev": "prisma migrate dev",
+    "pm2:start": "pm2 start src/index.js --name canany",
+    "pm2:logs": "pm2 logs canany",
+    "pm2:restart": "pm2 restart canany",
+    "pm2:stop": "pm2 stop canany"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.66.0"
+  },
+  "devDependencies": {
+    "pm2": "^5.4.2",
+    "prisma": "^5.22.0"
+  }
+}
