@@ -3,9 +3,8 @@
 // Slash commands are handled separately in ../commands.js.
 const config = require('../../config');
 const db = require('../../infrastructure/db/asksRepository');
-const ai = require('../../infrastructure/ai/effortUrgency');
 const views = require('../../presentation/views');
-const { displayName, threadLink, keyboard, threadOpts } = require('../../presentation/keyboards');
+const { displayName, threadLink, keyboardFor, threadOpts } = require('../../presentation/keyboards');
 const { pendingOutcome } = require('../state');
 const { refreshCard } = require('../cards');
 
@@ -43,13 +42,14 @@ function register(bot) {
 
       const askText = text.slice(ASK_PREFIX.length).trim() || text;
       const asker = displayName(msg.from);
-      const { effort, urgency } = await ai.parseEffortUrgency(askText);
 
+      // Effort and urgency start empty: the asker sets urgency and the claimer
+      // sets effort, both via buttons on the card (no auto-guessing).
       const row = await db.createAsk({
         ask: askText,
         asker,
-        effort,
-        urgency,
+        effort: null,
+        urgency: null,
         threadLink: threadLink(chatId, msg.message_thread_id, msg.message_id),
         chatId,
         topicId: msg.message_thread_id || null,
@@ -59,7 +59,7 @@ function register(bot) {
       const sent = await bot.sendMessage(chatId, views.card(row), {
         message_thread_id: msg.message_thread_id,
         parse_mode: 'HTML',
-        reply_markup: keyboard(row.id),
+        reply_markup: keyboardFor(row),
       });
       await db.setCardId(row.id, sent.message_id);
     } catch (err) {
