@@ -31,7 +31,7 @@ src/
     telegram/client.js             Bot instance, command menu, polling
   application/
     handlers/message.js            New asks + force-reply capture (outcome / custom effort)
-    handlers/callback.js           Claim · Scope · Done · urgency · effort button taps
+    handlers/callback.js           Claim · Done · urgency · effort button taps
     commands.js                    /board /top /stalled /help routing
     cards.js                       Re-render an ask card after a state change
     state.js                       In-memory map of outstanding force-reply prompts

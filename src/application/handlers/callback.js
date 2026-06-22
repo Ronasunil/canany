@@ -1,4 +1,4 @@
-// Button taps on an ask card: ✋ Claim, 🔍 Scope, ✅ Done.
+// Button taps on an ask card: ✋ Claim, ✅ Done.
 // Done is only allowed after Claim; it then asks the user to reply with an outcome.
 const db = require('../../infrastructure/db/asksRepository');
 const { URGENCIES, EFFORTS } = require('../../domain/constants');
@@ -70,13 +70,6 @@ function register(bot) {
         const row = await db.claimAsk(id, actor, q.from.id);
         if (!row) return void bot.answerCallbackQuery(q.id, { text: 'Already claimed or closed.' });
         await bot.answerCallbackQuery(q.id, { text: `✋ It's yours, @${actor}!` });
-        return void refreshCard(bot, row);
-      }
-
-      if (action === 'scope') {
-        const row = await db.scopeAsk(id);
-        if (!row) return void bot.answerCallbackQuery(q.id, { text: 'Can only scope an open ask.' });
-        await bot.answerCallbackQuery(q.id, { text: '🔍 Marked as scoping.' });
         return void refreshCard(bot, row);
       }
 

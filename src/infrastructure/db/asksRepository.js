@@ -48,26 +48,21 @@ async function getAsk(id) {
 // while claimed). Guarded so a concurrent close can't write onto a done ask,
 // and so a vanished row returns null instead of throwing. Returns the row or null.
 async function setUrgency(id, urgency) {
-  return guardedTransition(id, ['open', 'scoping', 'claimed'], { urgency });
+  return guardedTransition(id, ['open', 'claimed'], { urgency });
 }
 
 async function setEffort(id, effort) {
   return guardedTransition(id, ['claimed'], { effort });
 }
 
-// open/scoping -> claimed. Returns null if it wasn't claimable.
+// open -> claimed. Returns null if it wasn't claimable.
 async function claimAsk(id, who, whoId) {
-  return guardedTransition(id, ['open', 'scoping'], {
+  return guardedTransition(id, ['open'], {
     status: 'claimed',
     claimer: who,
     claimer_id: str(whoId),
     claimed_at: new Date(),
   });
-}
-
-// open -> scoping. Returns null if not open.
-async function scopeAsk(id) {
-  return guardedTransition(id, ['open'], { status: 'scoping' });
 }
 
 // claimed -> done. Returns null if not currently claimed.
@@ -79,14 +74,14 @@ async function doneAsk(id, outcome) {
   });
 }
 
-// Board rows, sorted by lifecycle (open -> scoping -> claimed -> done) then age.
+// Board rows, sorted by lifecycle (open -> claimed -> done) then age.
 // Active asks are all shown; closed ones are capped to the most recent so the
 // board can't grow past Telegram's 4096-char message limit as history piles up.
 const DONE_ON_BOARD = 15;
 async function listAsks() {
   const [active, recentDone] = await Promise.all([
     prisma.ask.findMany({
-      where: { status: { in: ['open', 'scoping', 'claimed'] } },
+      where: { status: { in: ['open', 'claimed'] } },
       orderBy: { created_at: 'asc' },
     }),
     prisma.ask.findMany({
@@ -106,7 +101,7 @@ async function listAsks() {
 async function stalledAsks(days) {
   const cutoff = new Date(Date.now() - days * 86400000);
   return prisma.ask.findMany({
-    where: { status: { in: ['open', 'scoping'] }, created_at: { lt: cutoff } },
+    where: { status: 'open', created_at: { lt: cutoff } },
     orderBy: { created_at: 'asc' },
   });
 }
@@ -125,7 +120,7 @@ async function leaderboard() {
           AND closed_at >= date_trunc('month', now())
       UNION ALL
       SELECT claimer AS person, 'helped' AS kind FROM asks
-        WHERE status IN ('claimed','scoping') AND claimer IS NOT NULL
+        WHERE status='claimed' AND claimer IS NOT NULL
           AND claimed_at >= date_trunc('month', now())
       UNION ALL
       SELECT asker AS person, 'raised' AS kind FROM asks
@@ -140,6 +135,6 @@ async function leaderboard() {
 
 module.exports = {
   createAsk, setCardId, getAsk, setUrgency, setEffort,
-  claimAsk, scopeAsk, doneAsk, listAsks, stalledAsks,
+  claimAsk, doneAsk, listAsks, stalledAsks,
   leaderboard,
 };

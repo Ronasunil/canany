@@ -44,7 +44,7 @@ function id(n) {
 }
 
 // Single-width glyphs (BMP code points, so monospace alignment stays intact).
-const STATUS_GLYPH = { open: '○', scoping: '◔', claimed: '◑', done: '✓' };
+const STATUS_GLYPH = { open: '○', claimed: '◑', done: '✓' };
 function statusCell(s) {
   return `${STATUS_GLYPH[s] || '•'} ${s}`;
 }

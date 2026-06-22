@@ -18,7 +18,7 @@ model Ask {
   asker_id    String? // Telegram user id of the asker — the spoof-proof identity for "asker-only" actions
   effort      String? // free-form estimate: '1 hr', '2 days', 'a month'
   urgency     String? // 'now' | 'EOD' | 'no-rush' (validated in app code)
-  status      String    @default("open") // 'open' | 'scoping' | 'claimed' | 'done'
+  status      String    @default("open") // 'open' | 'claimed' | 'done'
   claimer     String?
   claimer_id  String? // Telegram user id of the claimer — the spoof-proof identity for "claimer-only" actions
   outcome     String? // required to reach 'done'

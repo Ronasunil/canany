@@ -3,7 +3,7 @@
 // so the same words aren't redefined in three places.
 
 // The lifecycle of an ask, in order. Also used to sort the board.
-const STATUS_ORDER = ['open', 'scoping', 'claimed', 'done'];
+const STATUS_ORDER = ['open', 'claimed', 'done'];
 
 // Allowed urgency values (mirrors the CHECK constraint in db/schema.sql).
 // Set by the asker via buttons on the ask card.
