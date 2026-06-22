@@ -6,6 +6,10 @@
 const STATUS_ORDER = ['open', 'scoping', 'claimed', 'done'];
 
 // Allowed urgency values (mirrors the CHECK constraint in db/schema.sql).
+// Set by the asker via buttons on the ask card.
 const URGENCIES = ['now', 'EOD', 'no-rush'];
 
-module.exports = { STATUS_ORDER, URGENCIES };
+// Allowed effort estimates. Set by the claimer via buttons once they claim.
+const EFFORTS = ['~mins', '~hrs', '~days', '~weeks'];
+
+module.exports = { STATUS_ORDER, URGENCIES, EFFORTS };
