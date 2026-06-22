@@ -43,6 +43,15 @@ async function getAsk(id) {
   return prisma.ask.findUnique({ where: { id } });
 }
 
+// Asker sets urgency; claimer sets effort. Both return the updated row.
+async function setUrgency(id, urgency) {
+  return prisma.ask.update({ where: { id }, data: { urgency } });
+}
+
+async function setEffort(id, effort) {
+  return prisma.ask.update({ where: { id }, data: { effort } });
+}
+
 // open/scoping -> claimed. Returns null if it wasn't claimable.
 async function claimAsk(id, who) {
   return guardedTransition(id, ['open', 'scoping'], {
@@ -112,7 +121,7 @@ async function leaderboard() {
 }
 
 module.exports = {
-  createAsk, setCardId, getAsk,
+  createAsk, setCardId, getAsk, setUrgency, setEffort,
   claimAsk, scopeAsk, doneAsk, listAsks, stalledAsks,
   leaderboard,
 };
