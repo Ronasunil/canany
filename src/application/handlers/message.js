@@ -17,42 +17,56 @@ function register(bot) {
       if (!text) return;
 
       const chatId = msg.chat.id;
-      const userKey = `${chatId}:${msg.from.id}`;
+      const replyId = msg.reply_to_message?.message_id;
 
-      // 1) Custom-effort capture — the claimer's reply with an exact amount
-      //    (set after tapping ✏️ Custom effort). Skip commands / new asks.
-      if (pendingEffort.has(userKey) && !text.startsWith('/') && !text.startsWith(ASK_PREFIX)) {
-        const askId = pendingEffort.get(userKey);
-        pendingEffort.delete(userKey);
-        const effort = text.trim().slice(0, 40);
-        const row = await db.setEffort(askId, effort);
-        await refreshCard(bot, row);
-        await bot.sendMessage(chatId, `✅ Effort for ask #${askId}: ${effort}`, threadOpts(msg));
-        return;
-      }
+      // 1) Replies to our force-reply prompts. We only consume a message that is
+      //    an actual reply to the prompt AND from the user who was prompted — so
+      //    unrelated chatter can never be mistaken for an effort/outcome.
+      if (replyId && !text.startsWith('/')) {
+        const key = `${chatId}:${replyId}`;
 
-      // 2) Outcome capture — the user's reply that closes a 'done' ask.
-      //    (Skip if they're clearly doing something else: a command or a new ask.)
-      if (pendingOutcome.has(userKey) && !text.startsWith('/') && !text.startsWith(ASK_PREFIX)) {
-        const askId = pendingOutcome.get(userKey);
-        pendingOutcome.delete(userKey);
-        const row = await db.doneAsk(askId, text);
-        if (row) {
-          await refreshCard(bot, row);
-          await bot.sendMessage(chatId, `✅ Ask #${askId} closed. Outcome saved.`, threadOpts(msg));
-        } else {
-          await bot.sendMessage(chatId, `Couldn't close ask #${askId} — it may have changed.`, threadOpts(msg));
+        // 1a) Custom-effort reply (after tapping ✏️ Custom effort).
+        if (pendingEffort.has(key)) {
+          const { askId, userId } = pendingEffort.get(key);
+          if (msg.from.id !== userId) return;
+          pendingEffort.delete(key);
+          const effort = text.slice(0, 40);
+          const row = await db.setEffort(askId, effort);
+          if (row) {
+            await refreshCard(bot, row);
+            await bot.sendMessage(chatId, `✅ Effort for ask #${askId}: ${effort}`, threadOpts(msg));
+          } else {
+            await bot.sendMessage(chatId, `Couldn't set effort for ask #${askId} — it may have changed.`, threadOpts(msg));
+          }
+          return;
         }
-        return;
+
+        // 1b) Outcome reply that closes a claimed ask.
+        if (pendingOutcome.has(key)) {
+          const { askId, userId } = pendingOutcome.get(key);
+          if (msg.from.id !== userId) return;
+          pendingOutcome.delete(key);
+          const row = await db.doneAsk(askId, text);
+          if (row) {
+            await refreshCard(bot, row);
+            await bot.sendMessage(chatId, `✅ Ask #${askId} closed. Outcome saved.`, threadOpts(msg));
+          } else {
+            await bot.sendMessage(chatId, `Couldn't close ask #${askId} — it may have changed.`, threadOpts(msg));
+          }
+          return;
+        }
       }
 
-      // 3) Slash commands are routed by ../commands.js — ignore them here.
+      // 2) Slash commands are routed by ../commands.js — ignore them here.
       if (text.startsWith('/')) return;
 
-      // 4) New ask — any message that starts with the prefix (in a group or DM).
+      // 3) New ask — the prefix as its own word, followed by an actual request.
       if (!text.startsWith(ASK_PREFIX)) return;
+      const rest = text.slice(ASK_PREFIX.length);
+      if (rest && !/^\s/.test(rest)) return; // "#asking ..." is not an ask
+      const askText = rest.trim();
+      if (!askText) return; // bare "#ask" with no body
 
-      const askText = text.slice(ASK_PREFIX.length).trim() || text;
       const asker = displayName(msg.from);
 
       // Effort and urgency start empty: the asker sets urgency and the claimer
@@ -60,6 +74,7 @@ function register(bot) {
       const row = await db.createAsk({
         ask: askText,
         asker,
+        askerId: msg.from.id,
         effort: null,
         urgency: null,
         threadLink: threadLink(chatId, msg.message_thread_id, msg.message_id),
