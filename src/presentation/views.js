@@ -35,15 +35,24 @@ function id(n) {
   return '#' + String(n).padStart(2, '0');
 }
 
+// Single-width glyphs (BMP code points, so monospace alignment stays intact).
+const STATUS_GLYPH = { open: '○', scoping: '◔', claimed: '◑', done: '✓' };
+function statusCell(s) {
+  return `${STATUS_GLYPH[s] || '•'} ${s}`;
+}
+
 // ---- /board ----
+// Compact scan grid (# ASK URG EFF STATUS WHO). The full record — asker,
+// outcome text, clickable thread link — lives on each ask's card (see card()).
+// No outcome column: '✓ done' already implies an outcome was captured.
 function board(rows) {
   if (!rows.length) {
     return '📋 <b>canany — board</b>\n\nNo asks yet. Post one with #ask to get started.';
   }
-  const W = [3, 24, 8, 7, 8];
-  const header = cols(['#', 'ASK', 'EFF', 'URG', 'STATUS', 'WHO'], W);
+  const W = [3, 18, 7, 6, 9];
+  const header = cols(['#', 'ASK', 'URG', 'EFF', 'STATUS', 'WHO'], W);
   const body = rows.map((r) =>
-    cols([id(r.id), r.ask, r.effort || '—', r.urgency || '—', r.status, who(r.claimer)], W)
+    cols([id(r.id), r.ask, r.urgency || '—', r.effort || '—', statusCell(r.status), who(r.claimer)], W)
   );
   const counts = STATUS_ORDER
     .map((s) => `${rows.filter((r) => r.status === s).length} ${s}`)
@@ -86,6 +95,7 @@ function card(r) {
     `status: <b>${esc(r.status)}</b>${r.claimer ? `  ·  ✋ @${esc(r.claimer)}` : ''}`,
   ];
   if (r.outcome) lines.push(`✅ outcome: ${esc(r.outcome)}`);
+  if (r.thread_link) lines.push(`🔗 <a href="${esc(r.thread_link)}">thread</a>`);
   return lines.join('\n');
 }
 
