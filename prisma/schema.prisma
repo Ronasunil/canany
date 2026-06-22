@@ -15,10 +15,12 @@ model Ask {
   id          Int       @id @default(autoincrement())
   ask         String
   asker       String
+  asker_id    String? // Telegram user id of the asker — the spoof-proof identity for "asker-only" actions
   effort      String? // free-form estimate: '1 hr', '2 days', 'a month'
   urgency     String? // 'now' | 'EOD' | 'no-rush' (validated in app code)
   status      String    @default("open") // 'open' | 'scoping' | 'claimed' | 'done'
   claimer     String?
+  claimer_id  String? // Telegram user id of the claimer — the spoof-proof identity for "claimer-only" actions
   outcome     String? // required to reach 'done'
   thread_link String? // deep link back to the Telegram thread
   tg_chat_id  String? // Telegram ids stored as text (identifiers, never math)
