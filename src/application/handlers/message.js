@@ -25,12 +25,18 @@ function register(bot) {
       if (replyId && !text.startsWith('/')) {
         const key = `${chatId}:${replyId}`;
 
-        // 1a) Custom-effort reply (after tapping ✏️ Custom effort).
+        // 1a) "How many?" reply after tapping an effort unit (~hrs etc.).
         if (pendingEffort.has(key)) {
-          const { askId, userId } = pendingEffort.get(key);
+          const { askId, userId, unit } = pendingEffort.get(key);
           if (msg.from.id !== userId) return;
+          const n = Number(text);
+          if (!Number.isFinite(n) || n <= 0) {
+            // Keep the pending entry so they can reply again to the same prompt.
+            await bot.sendMessage(chatId, `Reply with a number, e.g. 3 ${unit}.`, threadOpts(msg));
+            return;
+          }
           pendingEffort.delete(key);
-          const effort = text.slice(0, 40);
+          const effort = `${n} ${n === 1 ? unit.replace(/s$/, '') : unit}`; // "1 hr" / "3 hrs"
           const row = await db.setEffort(askId, effort);
           if (row) {
             await refreshCard(bot, row);

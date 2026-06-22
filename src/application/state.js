@@ -5,7 +5,7 @@
 // an actual reply to our force-reply prompt — so unrelated chatter can't be
 // mistaken for an outcome/effort — and several prompts can be outstanding at once.
 // (In-memory, so a process restart drops any unanswered prompt; acceptable here.)
-const pendingOutcome = new Map(); // set on ✅ Done
-const pendingEffort = new Map(); // set on ✏️ Custom effort
+const pendingOutcome = new Map(); // set on ✅ Done; value { askId, userId }
+const pendingEffort = new Map(); // set on an effort-unit tap; value { askId, userId, unit }
 
 module.exports = { pendingOutcome, pendingEffort };

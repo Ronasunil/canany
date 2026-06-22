@@ -53,7 +53,7 @@ function statusCell(s) {
 // Scan grid (# ASK URG EFF STATUS WHO OUTCOME). OUTCOME is the free-width last
 // column (clipped); the full record — asker, outcome text, clickable thread
 // link — also lives on each ask's card (see card()). EFF is wide enough for a
-// typed custom effort like '12 hours'.
+// quantified effort like '12 hrs'.
 function board(rows) {
   if (!rows.length) {
     return '📋 <b>canany — board</b>\n\nNo asks yet. Post one with #ask to get started.';

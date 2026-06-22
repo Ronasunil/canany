@@ -11,7 +11,7 @@ const HELP =
   '🛠️ <b>Can Anyone</b> — ask openly, anyone grabs it, it gets done.\n\n' +
   `• Post <code>${ASK_PREFIX} your request</code> in the chat to raise an ask.\n` +
   '• As the <b>asker</b>, tap an urgency button (🔴 now · 🟡 EOD · 🟢 no-rush).\n' +
-  '• Tap <b>✋ Claim</b> to take it, then pick the <b>effort</b> (~mins · ~hrs · ~days · ~weeks).\n' +
+  '• Tap <b>✋ Claim</b> to take it, then pick an <b>effort</b> unit (~mins · ~hrs · ~days · ~weeks) and reply with how many.\n' +
   '• Tap <b>✅ Done</b> to close it with an outcome (you must claim first).\n\n' +
   'Commands:\n' +
   '/board — current asks\n' +
@@ -46,12 +46,11 @@ function effortRow(askId) {
 
 const claimBtn = (id) => ({ text: '✋ Claim', callback_data: `claim:${id}` });
 const doneBtn = (id) => ({ text: '✅ Done', callback_data: `done:${id}` });
-const customEffortBtn = (id) => ({ text: '✏️ Custom effort', callback_data: `eff:${id}:custom` });
 
 // The card's keyboard depends on where the ask is in its lifecycle:
 //  - open     → asker picks urgency (until set), plus Claim
-//  - claimed  → Claim is gone; claimer picks effort (presets or a typed
-//               custom amount, and can keep refining it), plus Done
+//  - claimed  → Claim is gone; claimer picks an effort unit (which then asks
+//               "how many?"), and can re-pick to change it, plus Done
 //  - done     → no buttons
 function keyboardFor(row) {
   const id = row.id;
@@ -60,7 +59,7 @@ function keyboardFor(row) {
   if (row.status === 'claimed') {
     const rows = [];
     if (!row.urgency) rows.push(urgencyRow(id)); // asker can still set it post-claim
-    rows.push(effortRow(id), [customEffortBtn(id)], [doneBtn(id)]);
+    rows.push(effortRow(id), [doneBtn(id)]);
     return { inline_keyboard: rows };
   }
 

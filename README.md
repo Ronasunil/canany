@@ -13,7 +13,7 @@ TELEGRAM (everything lives here)          NODE APP
 ## What it does
 
 - Post `#ask <your request>` in the chat → the bot saves it and replies with a card carrying the action buttons.
-- **Urgency is set by the asker** (🔴 now · 🟡 EOD · 🟢 no-rush); **effort by the claimer** (~mins · ~hrs · ~days · ~weeks, or ✏️ a typed exact amount like "3 days"). Each is owned by the person who actually knows it, chosen via buttons — no auto-guessing.
+- **Urgency is set by the asker** (🔴 now · 🟡 EOD · 🟢 no-rush); **effort by the claimer** — tap a unit (~mins · ~hrs · ~days · ~weeks) and the bot asks "how many?", giving an exact effort like "3 hrs". Each is owned by the person who actually knows it — no auto-guessing.
 - **✅ Done only works after ✋ Claim** — tapping it early shows "Claim it first". Closing prompts for an outcome.
 - **`/board`** current asks (with outcomes) · **`/top`** month's builders · **`/stalled`** asks open > 2 days.
 
@@ -30,7 +30,7 @@ src/
     db/asksRepository.js           Prisma query helpers for the asks table
     telegram/client.js             Bot instance, command menu, polling
   application/
-    handlers/message.js            New asks + force-reply capture (outcome / custom effort)
+    handlers/message.js            New asks + force-reply capture (outcome / effort amount)
     handlers/callback.js           Claim · Done · urgency · effort button taps
     commands.js                    /board /top /stalled /help routing
     cards.js                       Re-render an ask card after a state change
@@ -76,7 +76,7 @@ In your group (or a DM with the bot):
 ```
 #ask Can anyone make a quick landing page?
 ```
-As the asker, tap an urgency button. Tap ✅ Done before claiming → "Claim it first". Tap ✋ Claim → pick an effort (or ✏️ Custom) → ✅ Done → reply to the prompt with a link/outcome. Then run `/board`, `/top`, `/stalled`.
+As the asker, tap an urgency button. Tap ✅ Done before claiming → "Claim it first". Tap ✋ Claim → tap an effort unit → reply with how many → ✅ Done → reply to the prompt with a link/outcome. Then run `/board`, `/top`, `/stalled`.
 
 ## Deploy — AWS 2× EC2 (no Docker)
 
