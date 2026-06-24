@@ -123,6 +123,16 @@
     button.primary:hover, .btn.primary:hover { color: var(--void); background: var(--violet-2); border-color: var(--violet-2); }
     .exit::before { content: "›_"; color: var(--faint); font-weight: 800; }
     .exit:hover::before { color: var(--violet); }
+    /* refresh sits in the window chrome, next to exit — a link, so it just re-GETs */
+    .refresh {
+      flex: none; font: 700 12.5px/1 var(--mono); letter-spacing: .02em;
+      display: inline-flex; align-items: center; gap: 7px;
+      color: var(--dim); border: 1px solid var(--line-2); border-radius: 7px;
+      padding: 8px 13px; transition: color .15s, border-color .15s, background .15s;
+    }
+    .refresh:hover { color: var(--text); border-color: var(--violet-line); background: var(--violet-wash); text-decoration: none; }
+    .refresh::before { content: "↻"; color: var(--faint); font-weight: 800; font-size: 13.5px; }
+    .refresh:hover::before { color: var(--violet); }
 
     /* ---- The prompt (hero) ---- */
     .prompt {
@@ -191,9 +201,23 @@
 
     /* ---- The board (data grid) ---- */
     .grid { margin: 22px 0 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--void-2); }
-    .table-wrap { overflow-x: auto; }
+    /* Cap the height and let the rows scroll inside, so a long board doesn't run
+       the whole page off the screen. The header stays pinned as you scroll. */
+    .table-wrap {
+      overflow: auto; max-height: clamp(320px, 56vh, 560px);
+      scrollbar-width: thin; scrollbar-color: var(--line-2) transparent;
+      overscroll-behavior: contain;
+    }
+    .table-wrap::-webkit-scrollbar { width: 10px; height: 10px; }
+    .table-wrap::-webkit-scrollbar-track { background: transparent; }
+    .table-wrap::-webkit-scrollbar-thumb {
+      background: var(--line-2); border-radius: 6px; border: 2px solid var(--void-2);
+    }
+    .table-wrap::-webkit-scrollbar-thumb:hover { background: var(--faint); }
+    .table-wrap::-webkit-scrollbar-corner { background: transparent; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead th {
+      position: sticky; top: 0; z-index: 2;
       text-align: left; padding: 12px 16px;
       background: var(--panel-2); color: var(--faint);
       font-weight: 700; font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
@@ -266,7 +290,7 @@
          record — label on the left, value on the right, like a terminal dumping
          one record at a time. */
       .grid { background: transparent; border: 0; border-radius: 0; }
-      .grid .table-wrap { overflow: visible; }
+      .grid .table-wrap { overflow: visible; max-height: none; }
       .grid table, .grid tbody, .grid tr, .grid td { display: block; width: 100%; }
       .grid thead { display: none; }
       .grid tbody tr {

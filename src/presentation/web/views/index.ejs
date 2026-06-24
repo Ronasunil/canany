@@ -7,12 +7,15 @@
     stalled: 'Open asks that have been waiting a while and could use a hand.'
   };
   const glyphClass = { open: 'g-open', claimed: 'g-claimed', done: 'g-done' };
+  // A plain link back to the current view — re-fetches the data without client JS.
+  const refreshHref = tab === 'board' ? '/?tab=board&status=' + status : '/?tab=' + tab;
 %>
 <div class="term">
   <div class="term__bar">
     <span class="dots" aria-hidden="true"><span class="d-now"></span><span class="d-eod"></span><span class="d-norush"></span></span>
     <span class="term__title"><b>canany</b> — <%= commands[tab] %></span>
     <span class="term__spacer"></span>
+    <a class="refresh" href="<%= refreshHref %>" title="Refresh the board" aria-label="Refresh">refresh</a>
     <form method="post" action="/logout" style="margin:0;">
       <button type="submit" class="exit">exit</button>
     </form>
