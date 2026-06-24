@@ -1,14 +1,32 @@
 // Button taps on an ask card: ✋ Claim, ✅ Done.
 // Done is only allowed after Claim; it then asks the user to reply with an outcome.
 const db = require('../../infrastructure/db/asksRepository');
-const { URGENCIES, EFFORTS } = require('../../domain/constants');
-const { displayName, outcomePrompt } = require('../../presentation/keyboards');
+const { URGENCIES, EFFORT_UNIT_KEYS, effortLabel } = require('../../domain/constants');
+const { displayName, outcomePrompt, effortQtyKeyboard } = require('../../presentation/keyboards');
 const { refreshCard } = require('../cards');
+
+// Shared precondition for both effort steps: the ask must exist, be claimed, and
+// be acted on by its claimer (owns() closes over the actor). Answers the callback
+// with the reason and returns null on any failure; returns the ask row otherwise.
+async function effortGuard(bot, q, id, owns) {
+  const ask = await db.getAsk(id);
+  if (!ask) { await bot.answerCallbackQuery(q.id, { text: 'Ask not found.' }); return null; }
+  if (ask.status !== 'claimed') {
+    await bot.answerCallbackQuery(q.id, { text: 'Claim it first to set effort.', show_alert: true });
+    return null;
+  }
+  if (!owns(ask.claimer_id, ask.claimer)) {
+    await bot.answerCallbackQuery(q.id, { text: 'Only the claimer can set effort.', show_alert: true });
+    return null;
+  }
+  return ask;
+}
 
 function register(bot) {
   bot.on('callback_query', async (q) => {
     try {
-      const [action, idStr, value] = (q.data || '').split(':');
+      const parts = (q.data || '').split(':');
+      const [action, idStr, value] = parts;
       const id = Number(idStr);
       const actor = displayName(q.from);
       const actorId = String(q.from.id);
@@ -33,23 +51,46 @@ function register(bot) {
         return void refreshCard(bot, row);
       }
 
-      // Claimer taps an effort estimate — only after they've claimed it, only by
-      // the claimer. One tap sets the effort directly (e.g. '~hrs') and re-renders
-      // the card; re-tapping a different unit just overwrites it.
+      // Effort is a two-tap pick by the claimer (only while claimed, only by the
+      // claimer). Step 1 — tapping a unit ('eff') doesn't write anything; it swaps
+      // the unit buttons for that unit's quantity picker. Both steps re-check the
+      // ask state so a stale button can't act on a closed/reassigned ask.
       if (action === 'eff') {
-        if (!EFFORTS.includes(value)) return void bot.answerCallbackQuery(q.id);
+        if (!EFFORT_UNIT_KEYS.includes(value)) return void bot.answerCallbackQuery(q.id);
+        const guard = await effortGuard(bot, q, id, owns);
+        if (!guard) return;
+        if (!q.message) return void bot.answerCallbackQuery(q.id, { text: 'This ask is too old to act on.' });
+        await bot.answerCallbackQuery(q.id, { text: `how many ${value}?` });
+        try {
+          await bot.editMessageReplyMarkup(effortQtyKeyboard(id, value), {
+            chat_id: q.message.chat.id,
+            message_id: q.message.message_id,
+          });
+        } catch (err) {
+          if (!/not modified/i.test(err.message)) console.warn('editMessageReplyMarkup:', err.message);
+        }
+        return;
+      }
+
+      // Step 2 — tapping a quantity ('effq') sets the effort (e.g. '2 days') and
+      // re-renders the card, which restores the unit picker so it can be redone.
+      if (action === 'effq') {
+        const effort = effortLabel(value, Number(parts[3]));
+        if (!effort) return void bot.answerCallbackQuery(q.id);
+        const guard = await effortGuard(bot, q, id, owns);
+        if (!guard) return;
+        const row = await db.setEffort(id, effort);
+        if (!row) return void bot.answerCallbackQuery(q.id, { text: 'Could not update — it may have changed.' });
+        await bot.answerCallbackQuery(q.id, { text: `effort: ${effort}` });
+        return void refreshCard(bot, row);
+      }
+
+      // ← back from the quantity picker: just redraw the card's unit picker.
+      if (action === 'effback') {
         const ask = await db.getAsk(id);
         if (!ask) return void bot.answerCallbackQuery(q.id, { text: 'Ask not found.' });
-        if (ask.status !== 'claimed') {
-          return void bot.answerCallbackQuery(q.id, { text: 'Claim it first to set effort.', show_alert: true });
-        }
-        if (!owns(ask.claimer_id, ask.claimer)) {
-          return void bot.answerCallbackQuery(q.id, { text: 'Only the claimer can set effort.', show_alert: true });
-        }
-        const row = await db.setEffort(id, value);
-        if (!row) return void bot.answerCallbackQuery(q.id, { text: 'Could not update — it may have changed.' });
-        await bot.answerCallbackQuery(q.id, { text: `effort: ${value}` });
-        return void refreshCard(bot, row);
+        await bot.answerCallbackQuery(q.id);
+        return void refreshCard(bot, ask);
       }
 
       if (action === 'claim') {

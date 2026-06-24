@@ -1,7 +1,7 @@
 // Telegram message scaffolding: inline keyboard, reply options, display helpers,
 // and the static help copy. (Message *bodies* are rendered in views.js.)
 const config = require('../config');
-const { URGENCIES, EFFORTS } = require('../domain/constants');
+const { URGENCIES, EFFORT_UNITS } = require('../domain/constants');
 
 const ASK_PREFIX = config.behavior.askPrefix;
 
@@ -11,7 +11,7 @@ const HELP =
   '🛠️ <b>Can Anyone</b> — ask openly, anyone grabs it, it gets done.\n\n' +
   `• Post <code>${ASK_PREFIX} your request</code> in the chat to raise an ask.\n` +
   '• As the <b>asker</b>, tap an urgency button (🔴 now · 🟡 EOD · 🟢 no-rush).\n' +
-  '• Tap <b>✋ Claim</b> to take it, then tap an <b>effort</b> estimate (~mins · ~hrs · ~days · ~weeks).\n' +
+  '• Tap <b>✋ Claim</b> to take it, then tap an <b>effort</b> unit (~mins · ~hrs · ~days · ~weeks) and a quantity (e.g. 2 days).\n' +
   '• Tap <b>✅ Done</b> to close it with an outcome (you must claim first).\n\n' +
   'Commands:\n' +
   '/board — current asks\n' +
@@ -39,9 +39,26 @@ function urgencyRow(askId) {
   }));
 }
 
-// Claimer's effort picker (one button per allowed effort estimate).
+// Claimer's effort picker, step 1: one button per unit. Tapping a unit doesn't
+// set the effort yet — it swaps in the quantity picker below (see callback.js).
 function effortRow(askId) {
-  return EFFORTS.map((e) => ({ text: e, callback_data: `eff:${askId}:${e}` }));
+  return EFFORT_UNITS.map((u) => ({ text: `~${u.many}`, callback_data: `eff:${askId}:${u.key}` }));
+}
+
+// Step 2: quantity picker for a chosen unit. Each button sets the effort
+// outright (e.g. "2 days"); ← back returns to the unit picker. Quantities are
+// chunked so a wide unit (hrs) doesn't crowd one row on a phone.
+function effortQtyKeyboard(askId, unitKey) {
+  const u = EFFORT_UNITS.find((x) => x.key === unitKey);
+  if (!u) return null;
+  const btns = u.steps.map((n) => ({
+    text: `${n} ${n === 1 ? u.one : u.many}`,
+    callback_data: `effq:${askId}:${u.key}:${n}`,
+  }));
+  const rows = [];
+  for (let i = 0; i < btns.length; i += 4) rows.push(btns.slice(i, i + 4));
+  rows.push([{ text: '← back', callback_data: `effback:${askId}` }]);
+  return { inline_keyboard: rows };
 }
 
 const claimBtn = (id) => ({ text: '✋ Claim', callback_data: `claim:${id}` });
@@ -60,8 +77,8 @@ function parseOutcomePrompt(text) {
 
 // The card's keyboard depends on where the ask is in its lifecycle:
 //  - open     → asker picks urgency (until set), plus Claim
-//  - claimed  → Claim is gone; claimer taps an effort estimate (set directly,
-//               re-tap to change it), plus Done
+//  - claimed  → Claim is gone; claimer picks an effort unit then a quantity
+//               (re-pick any time to change it), plus Done
 //  - done     → no buttons
 function keyboardFor(row) {
   const id = row.id;
@@ -88,4 +105,4 @@ function threadOpts(msg, extra = {}) {
   return o;
 }
 
-module.exports = { HTML, HELP, displayName, threadLink, keyboardFor, threadOpts, outcomePrompt, parseOutcomePrompt };
+module.exports = { HTML, HELP, displayName, threadLink, keyboardFor, effortQtyKeyboard, threadOpts, outcomePrompt, parseOutcomePrompt };
