@@ -1,0 +1,46 @@
+<%- include('partials/head', { title: 'canany — board' }) %>
+<header>
+  <h1>📋 canany <span class="sub">— board</span></h1>
+  <form method="post" action="/logout" style="margin:0;">
+    <button type="submit">Sign out</button>
+  </form>
+</header>
+<main>
+  <% if (!rows.length) { %>
+    <p class="empty">No asks yet. Post one with <code>#ask</code> in Telegram to get started.</p>
+  <% } else { %>
+    <p class="summary">
+      <%= total %> ask<%= total === 1 ? '' : 's' %>
+      <% counts.forEach(function (c) { %> · <%= c.n %> <%= c.status %><% }); %>
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Ask</th><th>Urg</th><th>Eff</th>
+          <th>Status</th><th>Who</th><th>Outcome</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rows.forEach(function (r) { %>
+          <tr>
+            <td class="id">#<%= String(r.id).padStart(2, '0') %></td>
+            <td>
+              <% if (r.thread_link) { %>
+                <a href="<%= r.thread_link %>" target="_blank" rel="noopener noreferrer"><%= r.ask %></a>
+              <% } else { %>
+                <%= r.ask %>
+              <% } %>
+              <% if (r.asker) { %><div class="muted">from @<%= r.asker %></div><% } %>
+            </td>
+            <td class="urg"><%= r.urgency || '—' %></td>
+            <td class="eff"><%= r.effort || '—' %></td>
+            <td><span class="badge <%= r.status %>"><%= r.status %></span></td>
+            <td><%= r.claimer ? '@' + r.claimer : '—' %></td>
+            <td><%= r.outcome || '—' %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</main>
+<%- include('partials/foot') %>

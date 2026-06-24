@@ -29,15 +29,18 @@ src/
     db/prisma.js                   Prisma client (single shared instance)
     db/asksRepository.js           Prisma query helpers for the asks table
     telegram/client.js             Bot instance, command menu, polling
+    web/server.js                  Express app + cookie-session + EJS (optional web board)
   application/
     handlers/message.js            New asks + force-reply capture (outcome / effort amount)
     handlers/callback.js           Claim · Done · urgency · effort button taps
     commands.js                    /board /top /stalled /help routing
     cards.js                       Re-render an ask card after a state change
     state.js                       In-memory map of outstanding force-reply prompts
+    web/routes.js                  Login / logout / board routes + requireAuth
   presentation/
     views.js                       Monospace table / card rendering
     keyboards.js                   Inline keyboard, reply helpers, display names, help copy
+    web/views/                     EJS templates (login, board) for the web UI
   index.js                         Composition root: validate → connect Prisma → wire → poll
 prisma/schema.prisma               The `asks` model — source of truth; migrations build the DB
 ```
@@ -78,6 +81,30 @@ In your group (or a DM with the bot):
 ```
 As the asker, tap an urgency button. Tap ✅ Done before claiming → "Claim it first". Tap ✋ Claim → tap an effort unit → reply with how many → ✅ Done → reply to the prompt with a link/outcome. Then run `/board`, `/top`, `/stalled`.
 
+## Web board (optional)
+
+A **read-only** web view of the board, behind a single shared password. The bot
+stays the source of truth — claiming/closing still happens in Telegram; the web
+page just displays the same asks (server-rendered HTML, no React). It runs **in
+the same process** as the bot, so there's nothing extra to deploy.
+
+It's **off by default**. Enable it by setting `WEB_PASSWORD` in `.env`:
+
+```bash
+WEB_PASSWORD=pick-a-shared-password
+SESSION_SECRET=$(openssl rand -hex 32)   # required when WEB_PASSWORD is set
+WEB_PORT=8080                            # optional (default 8080)
+```
+
+Then `npm start` and open `http://localhost:8080` — you'll be sent to `/login`,
+and the board appears once you enter the password. Leave `WEB_PASSWORD` blank to
+run the bot only (no port is opened).
+
+> 🔒 **Serve it over HTTPS in production.** A shared password over plain HTTP is
+> exposed in transit. Front it with a TLS reverse proxy (Caddy gives automatic
+> HTTPS; nginx works too), then set `WEB_SECURE_COOKIE=true` so the login cookie
+> is only sent over TLS.
+
 ## Deploy — AWS 2× EC2 (no Docker)
 
 **DB box (private):** `apt install postgresql`; create db + user; in `pg_hba.conf` allow the **app box's private VPC IP** only; security group opens **5432 from the app SG only** (no public IPv4).
@@ -88,6 +115,6 @@ npm run prisma:migrate    # prisma migrate deploy — builds tables in the exist
 npm run pm2:start && pm2 save && pm2 startup
 ```
 > In production `migrate deploy` does **not** create the database, so on the DB box create it once: `CREATE DATABASE canany OWNER canany;`
-The app is **outbound-only** (long polling), so the security group only needs **SSH (22)** — no inbound web port.
+The bot itself is **outbound-only** (long polling), so with the web board off the security group only needs **SSH (22)** — no inbound web port. **If you enable the web board**, also open its port inbound — `WEB_PORT` (e.g. 8080), or 443 when fronted by a TLS proxy.
 
 > ⚠️ Only one instance may poll at a time. Stop the local bot before starting the one on EC2 (two pollers → Telegram `409 Conflict`).

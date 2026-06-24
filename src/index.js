@@ -2,7 +2,7 @@
 // load+validate config -> connect Prisma -> wire handlers -> start polling.
 // The schema is applied by Prisma migrations (npm run db:dev / prisma:migrate),
 // not on boot — so the database + tables must exist before starting.
-require('./config'); // requiring this validates env and exits if BOT_TOKEN/DATABASE_URL are missing.
+const config = require('./config'); // requiring this validates env and exits if BOT_TOKEN/DATABASE_URL are missing.
 
 const { prisma } = require('./infrastructure/db/prisma');
 const { bot, startPolling } = require('./infrastructure/telegram/client');
@@ -21,6 +21,16 @@ const commands = require('./application/commands');
   commands.register(bot);
 
   await startPolling();
+
+  // Optional read-only web board (runs in this same process when WEB_PASSWORD is set).
+  if (config.web.enabled) {
+    const { startWeb } = require('./infrastructure/web/server');
+    await startWeb();
+    console.log(`✅ web board on http://localhost:${config.web.port}`);
+  } else {
+    console.log('Web board disabled (set WEB_PASSWORD to enable).');
+  }
+
   console.log('✅ canany is running — post a #ask message, then try /board.');
 })().catch((err) => {
   console.error('Startup failed:', err.message);

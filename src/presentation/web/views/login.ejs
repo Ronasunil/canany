@@ -1,0 +1,20 @@
+<%- include('partials/head', { title: 'canany — sign in' }) %>
+<main style="max-width: 360px; margin-top: 12vh;">
+  <h1 style="font-size:18px; margin:0 0 4px;">📋 canany</h1>
+  <p class="muted" style="margin:0 0 24px;">Sign in to view the board.</p>
+  <% if (error) { %>
+    <p style="color:#ff6b6b; margin:0 0 16px;"><%= error %></p>
+  <% } %>
+  <form method="post" action="/login">
+    <input
+      type="password"
+      name="password"
+      placeholder="Password"
+      autofocus
+      autocomplete="current-password"
+      style="width:100%; padding:10px 12px; margin-bottom:12px; border-radius:6px;
+             border:1px solid var(--line); background:var(--panel); color:var(--fg); font:inherit;">
+    <button type="submit" style="width:100%;">Sign in</button>
+  </form>
+</main>
+<%- include('partials/foot') %>

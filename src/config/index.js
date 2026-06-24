@@ -13,6 +13,12 @@ function need(key) {
 need('BOT_TOKEN');
 need('DATABASE_URL');
 
+// The web UI is opt-in: it only starts when WEB_PASSWORD is set, so bot-only
+// installs keep working untouched. When it IS enabled we hard-require a
+// SESSION_SECRET — without it the login cookie can't be signed safely.
+const webEnabled = Boolean(process.env.WEB_PASSWORD);
+if (webEnabled) need('SESSION_SECRET');
+
 const config = Object.freeze({
   telegram: {
     token: process.env.BOT_TOKEN,
@@ -28,6 +34,19 @@ const config = Object.freeze({
       const n = Number(process.env.STALLED_DAYS);
       return Number.isFinite(n) && n > 0 ? n : 2;
     })(),
+  },
+  // Read-only web board behind a single shared password (see src/infrastructure/web).
+  web: {
+    enabled: webEnabled,
+    port: (() => {
+      const n = Number(process.env.WEB_PORT);
+      return Number.isFinite(n) && n > 0 ? n : 8080;
+    })(),
+    password: process.env.WEB_PASSWORD || null,
+    sessionSecret: process.env.SESSION_SECRET || null,
+    // Set WEB_SECURE_COOKIE=true once the site is fronted by HTTPS so the login
+    // cookie is only ever sent over TLS.
+    secureCookie: process.env.WEB_SECURE_COOKIE === 'true',
   },
 });
 

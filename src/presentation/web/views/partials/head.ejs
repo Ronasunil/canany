@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title><%= title %></title>
+  <style>
+    :root {
+      --bg: #0f1115; --panel: #171a21; --line: #262b36;
+      --fg: #e6e8ec; --muted: #8b929e; --accent: #6ea8fe;
+      --open: #f0b252; --claimed: #6ea8fe; --done: #5ad19a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    header h1 { margin: 0; font-size: 16px; font-weight: 600; }
+    header .sub { color: var(--muted); font-weight: 400; }
+    main { padding: 20px; max-width: 1100px; margin: 0 auto; }
+    a { color: var(--accent); }
+    button, .btn {
+      font: inherit; cursor: pointer; color: var(--fg);
+      background: #222733; border: 1px solid var(--line);
+      border-radius: 6px; padding: 7px 12px;
+    }
+    button:hover, .btn:hover { border-color: var(--accent); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+    td.id, td.urg, td.eff { white-space: nowrap; color: var(--muted); }
+    .badge {
+      display: inline-block; padding: 1px 8px; border-radius: 999px;
+      font-size: 12px; border: 1px solid currentColor;
+    }
+    .badge.open { color: var(--open); }
+    .badge.claimed { color: var(--claimed); }
+    .badge.done { color: var(--done); }
+    .muted { color: var(--muted); }
+    .summary { margin: 0 0 16px; color: var(--muted); }
+    .empty { color: var(--muted); padding: 40px 0; text-align: center; }
+  </style>
+</head>
+<body>
