@@ -3,7 +3,7 @@
   const commands = { board: 'board', top: 'top', stalled: 'stalled' };
   const ledes = {
     board: "Everything anyone's asked for — what's open, who grabbed it, and how it landed.",
-    top: "Who's shipping, helping, and raising the most this month.",
+    top: "Who's shipping and raising the most this month.",
     stalled: 'Open asks that have been waiting a while and could use a hand.'
   };
   const glyphClass = { open: 'g-open', claimed: 'g-claimed', done: 'g-done' };
@@ -101,7 +101,7 @@
         <div class="grid"><div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Rank</th><th>Builder</th><th>Shipped</th><th>Helped</th><th>Raised</th></tr>
+              <tr><th>Rank</th><th>Builder</th><th>Shipped</th><th>Raised</th></tr>
             </thead>
             <tbody>
               <% builders.forEach(function (b, i) { %>
@@ -109,7 +109,6 @@
                   <td data-label="Rank"><span class="rank r<%= i + 1 %>"><%= i + 1 %></span></td>
                   <td data-label="Builder"><span class="person"><span class="at">@</span><%= b.person %></span></td>
                   <td class="num" data-label="Shipped"><%= b.shipped %></td>
-                  <td class="num" data-label="Helped"><%= b.helped %></td>
                   <td class="num" data-label="Raised"><%= b.raised %></td>
                 </tr>
               <% }); %>

@@ -77,7 +77,6 @@ function register(app) {
         data.builders = raw.map((b) => ({
           person: b.person,
           shipped: Number(b.shipped),
-          helped: Number(b.helped),
           raised: Number(b.raised),
         }));
       } else {
