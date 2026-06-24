@@ -11,7 +11,7 @@ const HELP =
   '🛠️ <b>Can Anyone</b> — ask openly, anyone grabs it, it gets done.\n\n' +
   `• Post <code>${ASK_PREFIX} your request</code> in the chat to raise an ask.\n` +
   '• As the <b>asker</b>, tap an urgency button (🔴 now · 🟡 EOD · 🟢 no-rush).\n' +
-  '• Tap <b>✋ Claim</b> to take it, then pick an <b>effort</b> unit (~mins · ~hrs · ~days · ~weeks) and reply with how many.\n' +
+  '• Tap <b>✋ Claim</b> to take it, then tap an <b>effort</b> estimate (~mins · ~hrs · ~days · ~weeks).\n' +
   '• Tap <b>✅ Done</b> to close it with an outcome (you must claim first).\n\n' +
   'Commands:\n' +
   '/board — current asks\n' +
@@ -47,10 +47,21 @@ function effortRow(askId) {
 const claimBtn = (id) => ({ text: '✋ Claim', callback_data: `claim:${id}` });
 const doneBtn = (id) => ({ text: '✅ Done', callback_data: `done:${id}` });
 
+// The ✅ Done force-reply prompt. The wording also carries the ask id so a reply
+// can be matched back to its ask without any in-memory state (survives restarts):
+// outcomePrompt() builds it, parseOutcomePrompt() reads the id back out.
+const outcomePrompt = (actor, id) =>
+  `@${actor} reply to this with the outcome (a link or what you learned) to close ask #${id}.`;
+
+function parseOutcomePrompt(text) {
+  const m = /close ask #(\d+)/i.exec(text || '');
+  return m ? Number(m[1]) : null;
+}
+
 // The card's keyboard depends on where the ask is in its lifecycle:
 //  - open     → asker picks urgency (until set), plus Claim
-//  - claimed  → Claim is gone; claimer picks an effort unit (which then asks
-//               "how many?"), and can re-pick to change it, plus Done
+//  - claimed  → Claim is gone; claimer taps an effort estimate (set directly,
+//               re-tap to change it), plus Done
 //  - done     → no buttons
 function keyboardFor(row) {
   const id = row.id;
@@ -77,4 +88,4 @@ function threadOpts(msg, extra = {}) {
   return o;
 }
 
-module.exports = { HTML, HELP, displayName, threadLink, keyboardFor, threadOpts };
+module.exports = { HTML, HELP, displayName, threadLink, keyboardFor, threadOpts, outcomePrompt, parseOutcomePrompt };

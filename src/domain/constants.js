@@ -9,8 +9,8 @@ const STATUS_ORDER = ['open', 'claimed', 'done'];
 // Set by the asker via buttons on the ask card.
 const URGENCIES = ['now', 'EOD', 'no-rush'];
 
-// Effort units the claimer picks from (once claimed); tapping one then asks
-// "how many?", producing an effort like "3 hrs".
+// Effort estimates the claimer picks from (once claimed); tapping one sets the
+// effort directly (e.g. "~hrs") and re-renders the card.
 const EFFORTS = ['~mins', '~hrs', '~days', '~weeks'];
 
 module.exports = { STATUS_ORDER, URGENCIES, EFFORTS };

@@ -2,8 +2,7 @@
 // Done is only allowed after Claim; it then asks the user to reply with an outcome.
 const db = require('../../infrastructure/db/asksRepository');
 const { URGENCIES, EFFORTS } = require('../../domain/constants');
-const { displayName } = require('../../presentation/keyboards');
-const { pendingOutcome, pendingEffort } = require('../state');
+const { displayName, outcomePrompt } = require('../../presentation/keyboards');
 const { refreshCard } = require('../cards');
 
 function register(bot) {
@@ -34,9 +33,9 @@ function register(bot) {
         return void refreshCard(bot, row);
       }
 
-      // Claimer picks an effort unit — only after they've claimed it, only by the
-      // claimer. The unit doesn't set effort directly: we then ask "how many?" and
-      // the reply (handled in message.js) becomes the effort, e.g. "3 hrs".
+      // Claimer taps an effort estimate — only after they've claimed it, only by
+      // the claimer. One tap sets the effort directly (e.g. '~hrs') and re-renders
+      // the card; re-tapping a different unit just overwrites it.
       if (action === 'eff') {
         if (!EFFORTS.includes(value)) return void bot.answerCallbackQuery(q.id);
         const ask = await db.getAsk(id);
@@ -47,18 +46,10 @@ function register(bot) {
         if (!owns(ask.claimer_id, ask.claimer)) {
           return void bot.answerCallbackQuery(q.id, { text: 'Only the claimer can set effort.', show_alert: true });
         }
-        if (!q.message) return void bot.answerCallbackQuery(q.id, { text: 'This ask is too old to act on.' });
-
-        const unit = value.replace('~', ''); // '~hrs' -> 'hrs'
-        const chatId = q.message.chat.id;
-        await bot.answerCallbackQuery(q.id);
-        const sent = await bot.sendMessage(
-          chatId,
-          `@${actor} how many ${unit} for ask #${id}? Reply with a number (e.g. 3).`,
-          { message_thread_id: q.message.message_thread_id, reply_markup: { force_reply: true, selective: true } }
-        );
-        pendingEffort.set(`${chatId}:${sent.message_id}`, { askId: id, userId: q.from.id, unit });
-        return;
+        const row = await db.setEffort(id, value);
+        if (!row) return void bot.answerCallbackQuery(q.id, { text: 'Could not update — it may have changed.' });
+        await bot.answerCallbackQuery(q.id, { text: `effort: ${value}` });
+        return void refreshCard(bot, row);
       }
 
       if (action === 'claim') {
@@ -78,12 +69,13 @@ function register(bot) {
         if (!q.message) return void bot.answerCallbackQuery(q.id, { text: 'This ask is too old to act on.' });
         const chatId = q.message.chat.id;
         await bot.answerCallbackQuery(q.id);
-        const sent = await bot.sendMessage(
+        // The reply is matched back to this ask in message.js by reading the id
+        // out of the prompt text — no in-memory state, so it survives a restart.
+        await bot.sendMessage(
           chatId,
-          `@${actor} reply to this with the outcome (a link or what you learned) to close ask #${id}.`,
+          outcomePrompt(actor, id),
           { message_thread_id: q.message.message_thread_id, reply_markup: { force_reply: true, selective: true } }
         );
-        pendingOutcome.set(`${chatId}:${sent.message_id}`, { askId: id, userId: q.from.id });
         return;
       }
 

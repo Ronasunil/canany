@@ -4,8 +4,7 @@
 const config = require('../../config');
 const db = require('../../infrastructure/db/asksRepository');
 const views = require('../../presentation/views');
-const { displayName, threadLink, keyboardFor, threadOpts } = require('../../presentation/keyboards');
-const { pendingOutcome, pendingEffort } = require('../state');
+const { displayName, threadLink, keyboardFor, threadOpts, parseOutcomePrompt } = require('../../presentation/keyboards');
 const { refreshCard } = require('../cards');
 
 const ASK_PREFIX = config.behavior.askPrefix;
@@ -17,41 +16,24 @@ function register(bot) {
       if (!text) return;
 
       const chatId = msg.chat.id;
-      const replyId = msg.reply_to_message?.message_id;
+      const repliedTo = msg.reply_to_message;
 
-      // 1) Replies to our force-reply prompts. We only consume a message that is
-      //    an actual reply to the prompt AND from the user who was prompted — so
-      //    unrelated chatter can never be mistaken for an effort/outcome.
-      if (replyId && !text.startsWith('/')) {
-        const key = `${chatId}:${replyId}`;
+      // 1) Outcome reply that closes a claimed ask. We only consume a message that
+      //    is an actual reply to our ✅ Done prompt — identified by it being one of
+      //    the bot's own messages whose text carries the ask id (parseOutcomePrompt).
+      //    No in-memory state, so an outstanding prompt survives a bot restart.
+      if (repliedTo?.from?.is_bot && !text.startsWith('/')) {
+        const askId = parseOutcomePrompt(repliedTo.text);
+        if (askId !== null) {
+          const ask = await db.getAsk(askId);
+          if (!ask) return; // ask vanished — ignore the stray reply
 
-        // 1a) "How many?" reply after tapping an effort unit (~hrs etc.).
-        if (pendingEffort.has(key)) {
-          const { askId, userId, unit } = pendingEffort.get(key);
-          if (msg.from.id !== userId) return;
-          const n = Number(text);
-          if (!Number.isFinite(n) || n <= 0) {
-            // Keep the pending entry so they can reply again to the same prompt.
-            await bot.sendMessage(chatId, `Reply with a number, e.g. 3 ${unit}.`, threadOpts(msg));
-            return;
-          }
-          pendingEffort.delete(key);
-          const effort = `${n} ${n === 1 ? unit.replace(/s$/, '') : unit}`; // "1 hr" / "3 hrs"
-          const row = await db.setEffort(askId, effort);
-          if (row) {
-            await refreshCard(bot, row);
-            await bot.sendMessage(chatId, `✅ Effort for ask ${askId} is ${effort}`, threadOpts(msg));
-          } else {
-            await bot.sendMessage(chatId, `Couldn't set effort for ask #${askId} — it may have changed.`, threadOpts(msg));
-          }
-          return;
-        }
+          // Only the claimer can close it (same rule as the callback handler).
+          const isClaimer = ask.claimer_id
+            ? String(msg.from.id) === ask.claimer_id
+            : displayName(msg.from) === ask.claimer;
+          if (!isClaimer) return;
 
-        // 1b) Outcome reply that closes a claimed ask.
-        if (pendingOutcome.has(key)) {
-          const { askId, userId } = pendingOutcome.get(key);
-          if (msg.from.id !== userId) return;
-          pendingOutcome.delete(key);
           const row = await db.doneAsk(askId, text);
           if (row) {
             await refreshCard(bot, row);
