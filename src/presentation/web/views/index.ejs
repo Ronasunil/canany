@@ -1,0 +1,157 @@
+<%- include('partials/head', { title: 'canany — board' }) %>
+<%
+  const commands = { board: 'board', top: 'top', stalled: 'stalled' };
+  const ledes = {
+    board: "Everything anyone's asked for — what's open, who grabbed it, and how it landed.",
+    top: "Who's shipping, helping, and raising the most this month.",
+    stalled: 'Open asks that have been waiting a while and could use a hand.'
+  };
+  const glyphClass = { open: 'g-open', claimed: 'g-claimed', done: 'g-done' };
+%>
+<div class="term">
+  <div class="term__bar">
+    <span class="dots" aria-hidden="true"><span class="d-now"></span><span class="d-eod"></span><span class="d-norush"></span></span>
+    <span class="term__title"><b>canany</b> — <%= commands[tab] %></span>
+    <span class="term__spacer"></span>
+    <form method="post" action="/logout" style="margin:0;">
+      <button type="submit" class="exit">exit</button>
+    </form>
+  </div>
+
+  <main class="term__body">
+    <h1 class="prompt"><span class="pfx">canany&nbsp;~&nbsp;%</span> <span class="cmd"><%= commands[tab] %></span><%
+      if (tab === 'board' && status !== 'all') { %> <span class="flag">--<%= status %></span><% }
+    %><span class="caret" aria-hidden="true"></span></h1>
+    <p class="lede"><%= ledes[tab] %></p>
+
+    <% if (tab === 'board') { %>
+      <p class="stat"><b><%= total %></b> asks tracked<% counts.forEach(function (c) { %><span class="sep">·</span><b><%= c.n %></b> <%= c.status %><% }); %></p>
+    <% } %>
+
+    <nav class="tabs">
+      <a class="tab <%= tab === 'board' ? 'active' : '' %>" href="/?tab=board">board</a>
+      <a class="tab <%= tab === 'top' ? 'active' : '' %>" href="/?tab=top">top</a>
+      <a class="tab <%= tab === 'stalled' ? 'active' : '' %>" href="/?tab=stalled">stalled</a>
+    </nav>
+
+    <% if (tab === 'board') { %>
+      <%
+        const filters = [{ key: 'all', label: 'all', glyph: '▸', g: 'g-all', n: total }]
+          .concat(counts.map(function (c) {
+            const marks = { open: '○', claimed: '◑', done: '●' };
+            return { key: c.status, label: c.status, glyph: marks[c.status] || '•', g: glyphClass[c.status] || '', n: c.n };
+          }));
+      %>
+      <nav class="flags">
+        <% filters.forEach(function (f) { %>
+          <a class="flag <%= status === f.key ? 'active' : '' %>" href="/?tab=board&status=<%= f.key %>"><span class="glyph <%= f.g %>"><%= f.glyph %></span><%= f.label %> <span class="n"><%= f.n %></span></a>
+        <% }); %>
+      </nav>
+
+      <% if (!rows.length) { %>
+        <div class="empty">
+          <% if (total === 0) { %>
+            <p class="lead">No asks yet</p>
+            <p>Post one with <code>#ask …</code> in Telegram and it shows up here.</p>
+          <% } else { %>
+            <p class="lead">Nothing <%= status %></p>
+            <p>No <%= status %> asks right now. Try another filter.</p>
+          <% } %>
+        </div>
+      <% } else { %>
+        <div class="grid"><div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>Ask</th><th>Urgency</th><th>Effort</th>
+                <th>Status</th><th>Who</th><th>Outcome</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% rows.forEach(function (r) { %>
+                <tr>
+                  <td class="id" data-label="#"><%= String(r.id).padStart(2, '0') %></td>
+                  <td data-label="Ask">
+                    <% if (r.thread_link) { %>
+                      <a class="ask-text" href="<%= r.thread_link %>" target="_blank" rel="noopener noreferrer"><%= r.ask %></a>
+                    <% } else { %>
+                      <span class="ask-text"><%= r.ask %></span>
+                    <% } %>
+                    <% if (r.asker) { %><div class="from">from @<%= r.asker %></div><% } %>
+                  </td>
+                  <td data-label="Urgency"><% if (r.urgency) { %><span class="urg <%= r.urgency %>"><%= r.urgency %></span><% } else { %><span class="dash">—</span><% } %></td>
+                  <td class="num" data-label="Effort"><% if (r.effort) { %><%= r.effort %><% } else { %><span class="dash">—</span><% } %></td>
+                  <td data-label="Status"><span class="st <%= r.status %>"><%= r.status %></span></td>
+                  <td data-label="Who"><% if (r.claimer) { %><span class="person"><span class="at">@</span><%= r.claimer %></span><% } else { %><span class="dash">—</span><% } %></td>
+                  <td data-label="Outcome"><% if (r.outcome) { %><span class="outcome"><span class="arr">↳</span><%= r.outcome %></span><% } else { %><span class="dash">—</span><% } %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div></div>
+      <% } %>
+
+    <% } else if (tab === 'top') { %>
+      <% if (!builders.length) { %>
+        <div class="empty">
+          <p class="lead">No closed asks yet</p>
+          <p>The leaderboard fills in as asks get claimed and shipped.</p>
+        </div>
+      <% } else { %>
+        <div class="grid"><div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Rank</th><th>Builder</th><th>Shipped</th><th>Helped</th><th>Raised</th></tr>
+            </thead>
+            <tbody>
+              <% builders.forEach(function (b, i) { %>
+                <tr>
+                  <td data-label="Rank"><span class="rank r<%= i + 1 %>"><%= i + 1 %></span></td>
+                  <td data-label="Builder"><span class="person"><span class="at">@</span><%= b.person %></span></td>
+                  <td class="num" data-label="Shipped"><%= b.shipped %></td>
+                  <td class="num" data-label="Helped"><%= b.helped %></td>
+                  <td class="num" data-label="Raised"><%= b.raised %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div></div>
+      <% } %>
+
+    <% } else { %>
+      <p class="summary">Open longer than <%= days %> day<%= days === 1 ? '' : 's' %> — <%= stalled.length %> waiting</p>
+      <% if (!stalled.length) { %>
+        <div class="empty">
+          <p class="lead">All caught up</p>
+          <p>Nothing has been open longer than <%= days %> day<%= days === 1 ? '' : 's' %>.</p>
+        </div>
+      <% } else { %>
+        <div class="grid"><div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Ask</th><th>Age</th><th>Status</th><th>Asker</th></tr>
+            </thead>
+            <tbody>
+              <% stalled.forEach(function (r) { %>
+                <tr>
+                  <td class="id" data-label="#"><%= String(r.id).padStart(2, '0') %></td>
+                  <td data-label="Ask"><span class="ask-text"><%= r.ask %></span></td>
+                  <td class="num" data-label="Age"><%= r.ageDays %>d</td>
+                  <td data-label="Status"><span class="st <%= r.status %>"><%= r.status %></span></td>
+                  <td data-label="Asker"><% if (r.asker) { %><span class="person"><span class="at">@</span><%= r.asker %></span><% } else { %><span class="dash">—</span><% } %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div></div>
+      <% } %>
+    <% } %>
+  </main>
+
+  <div class="term__foot">
+    <span>read-only mirror</span><span class="sep">·</span>
+    <span>the Telegram bot is the source of truth</span><span class="sep">·</span>
+    <span>claim &amp; close happen in chat</span>
+  </div>
+</div>
+<%- include('partials/foot') %>

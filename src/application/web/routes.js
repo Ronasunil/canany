@@ -36,7 +36,7 @@ function register(app) {
       req.session.authed = true;
       return res.redirect('/');
     }
-    res.status(401).render('login', { error: 'Wrong password.' });
+    res.status(401).render('login', { error: 'Wrong password. Try again.' });
   });
 
   app.post('/logout', (req, res) => {
@@ -44,16 +44,54 @@ function register(app) {
     res.redirect('/login');
   });
 
-  // The board. Same rows the Telegram /board command renders, sorted
-  // open -> claimed -> done by asksRepository.listAsks().
+  // Single tabbed page. The active tab (and, for the board, the status filter)
+  // come from the query string so each "tab" is just a server-rendered link —
+  // no client JS. Each tab reuses the same asksRepository the bot commands do.
+  const TABS = ['board', 'top', 'stalled'];
+  const STATUS_FILTERS = [...STATUS_ORDER, 'all'];
+
   app.get('/', requireAuth, async (req, res, next) => {
     try {
-      const rows = await asks.listAsks();
-      const counts = STATUS_ORDER.map((s) => ({
-        status: s,
-        n: rows.filter((r) => r.status === s).length,
-      }));
-      res.render('board', { rows, counts, total: rows.length });
+      // Anything unrecognised falls back to the default, so a hand-edited query
+      // string can never 500 the page.
+      const tab = TABS.includes(req.query.tab) ? req.query.tab : 'board';
+      const data = { tab };
+
+      if (tab === 'board') {
+        // Same rows the Telegram /board renders (open -> claimed -> done).
+        const rows = await asks.listAsks();
+        // Counts are over the FULL set so the chips always show real totals,
+        // independent of which filter is active.
+        data.counts = STATUS_ORDER.map((s) => ({
+          status: s,
+          n: rows.filter((r) => r.status === s).length,
+        }));
+        data.total = rows.length;
+        const status = STATUS_FILTERS.includes(req.query.status) ? req.query.status : 'all';
+        data.status = status;
+        data.rows = status === 'all' ? rows : rows.filter((r) => r.status === status);
+      } else if (tab === 'top') {
+        // leaderboard() counts come back as BigInt (Postgres COUNT via $queryRaw);
+        // convert so EJS rendering and any length checks stay simple.
+        const raw = await asks.leaderboard();
+        data.builders = raw.map((b) => ({
+          person: b.person,
+          shipped: Number(b.shipped),
+          helped: Number(b.helped),
+          raised: Number(b.raised),
+        }));
+      } else {
+        // stalled: open asks older than STALLED_DAYS, with a precomputed age.
+        const days = config.behavior.stalledDays;
+        const raw = await asks.stalledAsks(days);
+        data.days = days;
+        data.stalled = raw.map((r) => ({
+          ...r,
+          ageDays: Math.floor((Date.now() - new Date(r.created_at).getTime()) / 86400000),
+        }));
+      }
+
+      res.render('index', data);
     } catch (err) {
       next(err);
     }
