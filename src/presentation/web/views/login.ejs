@@ -1,53 +1,33 @@
 <%- include('partials/head', { title: 'canany — login' }) %>
-<style>
-  .login-wrap { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
-  .login { width: 100%; max-width: 440px; }
-  .login .term__body { padding: 30px clamp(22px, 6vw, 34px) 34px; }
-  .login .prompt { font-size: clamp(20px, 5vw, 26px); }
-  .login .lede { margin-top: 12px; font-size: 14px; }
-  .login form { margin: 26px 0 0; }
-  .login label {
-    display: block; font-family: var(--mono); font-size: 11px; font-weight: 700;
-    letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin: 0 0 9px;
-  }
-  .field { display: flex; align-items: center; gap: 9px;
-    border: 1px solid var(--line-2); border-radius: 9px; background: var(--void-2);
-    padding: 0 13px; transition: border-color .15s, box-shadow .15s, background .15s; }
-  .field::before { content: "%"; color: var(--violet); font-weight: 800; flex: none; }
-  .field:focus-within { border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-wash); background: var(--panel); }
-  .login input[type=password] {
-    flex: 1 1 auto; width: 100%; padding: 12px 0; border: 0; outline: none;
-    background: transparent; color: var(--text);
-    font: 500 14px/1 var(--mono); letter-spacing: .12em;
-  }
-  .login input[type=password]::placeholder { color: var(--faint); letter-spacing: .3em; }
-  .login button.primary { width: 100%; justify-content: center; margin-top: 16px; padding: 12px; font-size: 13px; }
-  .login .err {
-    display: flex; align-items: center; gap: 9px; margin: 0 0 18px;
-    color: var(--now); background: rgba(229,96,77,.09); border: 1px solid rgba(229,96,77,.32);
-    border-radius: 9px; padding: 10px 13px; font-size: 13px; font-weight: 500;
-  }
-  .login .err::before { content: "✗"; font-weight: 800; flex: none; }
-</style>
-<div class="login-wrap">
-  <div class="term login">
+<%- include('partials/form-styles') %>
+<div class="auth-wrap">
+  <div class="term auth">
     <div class="term__bar">
       <span class="dots" aria-hidden="true"><span class="d-now"></span><span class="d-eod"></span><span class="d-norush"></span></span>
       <span class="term__title"><b>canany</b> — login</span>
     </div>
     <div class="term__body">
       <h1 class="prompt"><span class="pfx">canany&nbsp;~&nbsp;%</span> <span class="cmd">login</span><span class="caret" aria-hidden="true"></span></h1>
-      <p class="lede">Read-only. The bot in Telegram stays the source of truth — this just shows the same board.</p>
+      <p class="lede">Sign in to your boards. The Telegram bot stays the source of truth — this is where you manage orgs and watch each group's board.</p>
       <% if (error) { %>
         <p class="err"><%= error %></p>
       <% } %>
       <form method="post" action="/login">
-        <label for="password">Shared password</label>
-        <div class="field">
-          <input id="password" type="password" name="password" placeholder="••••••••" autofocus autocomplete="current-password">
+        <div class="row">
+          <label for="email">Email</label>
+          <div class="field">
+            <input id="email" type="email" name="email" value="<%= email %>" placeholder="you@example.com" autofocus autocomplete="email" required>
+          </div>
         </div>
-        <button type="submit" class="primary">Unlock board</button>
+        <div class="row">
+          <label for="password">Password</label>
+          <div class="field">
+            <input id="password" type="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+          </div>
+        </div>
+        <button type="submit" class="primary">Log in</button>
       </form>
+      <p class="alt">No account? <a href="/signup">Sign up →</a></p>
     </div>
   </div>
 </div>

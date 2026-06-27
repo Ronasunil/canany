@@ -20,11 +20,13 @@ function buildApp() {
   // req.protocol reflect the original https request.
   app.set('trust proxy', 1);
 
-  // Parse the login form post.
+  // Parse signup / login / org form posts.
   app.use(express.urlencoded({ extended: false }));
 
-  // Stateless signed cookie — just an "authed" flag, so it survives restarts
-  // with no server-side store. Secure flag flips on once we're behind HTTPS.
+  // Stateless signed cookie carrying { uid, orgId, csrf } — no server-side store,
+  // so sessions survive restarts. sameSite:'lax' is the CSRF baseline; authed
+  // POSTs additionally carry a synchronizer token (see routes.js verifyCsrf).
+  // Secure flag flips on once we're behind HTTPS.
   app.use(cookieSession({
     name: 'canany.sid',
     secret: config.web.sessionSecret,

@@ -1,0 +1,33 @@
+<%- include('partials/head', { title: 'canany — new org' }) %>
+<%- include('partials/form-styles') %>
+<div class="auth-wrap">
+  <div class="term auth">
+    <div class="term__bar">
+      <span class="dots" aria-hidden="true"><span class="d-now"></span><span class="d-eod"></span><span class="d-norush"></span></span>
+      <span class="term__title"><b>canany</b> — new org</span>
+      <span class="term__spacer"></span>
+      <form method="post" action="/logout" style="margin:0;">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <button type="submit" class="exit">exit</button>
+      </form>
+    </div>
+    <div class="term__body">
+      <h1 class="prompt"><span class="pfx">canany&nbsp;~&nbsp;%</span> <span class="cmd">org new</span><span class="caret" aria-hidden="true"></span></h1>
+      <p class="lede">Name your org — it owns one or more Telegram groups under a single board. You can create more later.</p>
+      <% if (error) { %>
+        <p class="err"><%= error %></p>
+      <% } %>
+      <form method="post" action="/orgs">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="row">
+          <label for="name">Org name</label>
+          <div class="field">
+            <input id="name" type="text" name="name" value="<%= name %>" placeholder="Acme Engineering" autofocus autocomplete="organization" maxlength="80" required>
+          </div>
+        </div>
+        <button type="submit" class="primary">Create org</button>
+      </form>
+    </div>
+  </div>
+</div>
+<%- include('partials/foot') %>

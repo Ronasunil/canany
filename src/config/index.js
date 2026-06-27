@@ -13,15 +13,22 @@ function need(key) {
 need('BOT_TOKEN');
 need('DATABASE_URL');
 
-// The web UI is opt-in: it only starts when WEB_PASSWORD is set, so bot-only
-// installs keep working untouched. When it IS enabled we hard-require a
-// SESSION_SECRET — without it the login cookie can't be signed safely.
-const webEnabled = Boolean(process.env.WEB_PASSWORD);
-if (webEnabled) need('SESSION_SECRET');
+// The web UI is now the product front door (signup -> org -> connect token), so
+// it's on by default. Opt out for a pure-bot deploy with WEB_ENABLED=false.
+// When the web is on we hard-require SESSION_SECRET (to sign the session cookie)
+// and BOT_USERNAME (for the "add the bot to your group" deep link on the org page).
+const webEnabled = process.env.WEB_ENABLED !== 'false';
+if (webEnabled) {
+  need('SESSION_SECRET');
+  need('BOT_USERNAME');
+}
 
 const config = Object.freeze({
   telegram: {
     token: process.env.BOT_TOKEN,
+    // Used to build https://t.me/<botUsername>?startgroup=true. Stored without a
+    // leading @ so the link is always well-formed.
+    botUsername: (process.env.BOT_USERNAME || '').replace(/^@/, '') || null,
   },
   database: {
     url: process.env.DATABASE_URL,
@@ -35,16 +42,18 @@ const config = Object.freeze({
       return Number.isFinite(n) && n > 0 ? n : 2;
     })(),
   },
-  // Read-only web board behind a single shared password (see src/infrastructure/web).
+  // The multi-tenant web board: accounts, orgs, and per-org boards (see src/infrastructure/web).
   web: {
     enabled: webEnabled,
     port: (() => {
       const n = Number(process.env.WEB_PORT);
       return Number.isFinite(n) && n > 0 ? n : 8080;
     })(),
-    password: process.env.WEB_PASSWORD || null,
     sessionSecret: process.env.SESSION_SECRET || null,
-    // Set WEB_SECURE_COOKIE=true once the site is fronted by HTTPS so the login
+    // Optional bootstrap kill-switch: when set, signup additionally requires this
+    // code (gate to invited users). Unset (the default) = open signup.
+    signupCode: process.env.SIGNUP_CODE || null,
+    // Set WEB_SECURE_COOKIE=true once the site is fronted by HTTPS so the session
     // cookie is only ever sent over TLS.
     secureCookie: process.env.WEB_SECURE_COOKIE === 'true',
   },

@@ -20,7 +20,7 @@ async function guardedTransition(id, fromStatuses, data) {
   });
 }
 
-async function createAsk({ ask, asker, askerId, effort, urgency, threadLink, chatId, topicId, msgId }) {
+async function createAsk({ ask, asker, askerId, effort, urgency, threadLink, chatId, topicId, msgId, orgId }) {
   return prisma.ask.create({
     data: {
       ask,
@@ -32,6 +32,9 @@ async function createAsk({ ask, asker, askerId, effort, urgency, threadLink, cha
       tg_chat_id: str(chatId),
       tg_topic_id: str(topicId),
       tg_msg_id: str(msgId),
+      // Denormalized org snapshot — resolved from the group before we get here.
+      // Defaults to null so a legacy/unscoped caller can't crash on a missing org.
+      org_id: orgId ?? null,
     },
   });
 }
@@ -78,14 +81,14 @@ async function doneAsk(id, outcome) {
 // Active asks are all shown; closed ones are capped to the most recent so the
 // board can't grow past Telegram's 4096-char message limit as history piles up.
 const DONE_ON_BOARD = 15;
-async function listAsks() {
+async function listAsks(orgId) {
   const [active, recentDone] = await Promise.all([
     prisma.ask.findMany({
-      where: { status: { in: ['open', 'claimed'] } },
+      where: { org_id: orgId, status: { in: ['open', 'claimed'] } },
       orderBy: { created_at: 'asc' },
     }),
     prisma.ask.findMany({
-      where: { status: 'done' },
+      where: { org_id: orgId, status: 'done' },
       orderBy: { closed_at: 'desc' },
       take: DONE_ON_BOARD,
     }),
@@ -98,17 +101,19 @@ async function listAsks() {
   return [...active, ...recentDone].sort((a, b) => rank(a.status) - rank(b.status));
 }
 
-async function stalledAsks(days) {
+async function stalledAsks(orgId, days) {
   const cutoff = new Date(Date.now() - days * 86400000);
   return prisma.ask.findMany({
-    where: { status: 'open', created_at: { lt: cutoff } },
+    where: { org_id: orgId, status: 'open', created_at: { lt: cutoff } },
     orderBy: { created_at: 'asc' },
   });
 }
 
 // Builders for the current calendar month. Kept as raw SQL — the UNION ALL +
 // FILTER + date_trunc shape isn't worth expressing in the query builder.
-async function leaderboard() {
+async function leaderboard(orgId) {
+  // org_id is filtered in EACH of the three UNION ALL arms — every ${orgId} is
+  // bound as its own query parameter by $queryRaw (no string interpolation).
   return prisma.$queryRaw`
     SELECT person,
            COUNT(*) FILTER (WHERE kind='shipped') AS shipped,
@@ -117,14 +122,17 @@ async function leaderboard() {
     FROM (
       SELECT claimer AS person, 'shipped' AS kind FROM asks
         WHERE status='done' AND claimer IS NOT NULL
+          AND org_id = ${orgId}
           AND closed_at >= date_trunc('month', now())
       UNION ALL
       SELECT claimer AS person, 'helped' AS kind FROM asks
         WHERE status='claimed' AND claimer IS NOT NULL
+          AND org_id = ${orgId}
           AND claimed_at >= date_trunc('month', now())
       UNION ALL
       SELECT asker AS person, 'raised' AS kind FROM asks
         WHERE asker IS NOT NULL
+          AND org_id = ${orgId}
           AND created_at >= date_trunc('month', now())
     ) t
     WHERE person IS NOT NULL AND person <> ''

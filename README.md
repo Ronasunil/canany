@@ -81,29 +81,33 @@ In your group (or a DM with the bot):
 ```
 As the asker, tap an urgency button. Tap ✅ Done before claiming → "Claim it first". Tap ✋ Claim → tap an effort unit → reply with how many → ✅ Done → reply to the prompt with a link/outcome. Then run `/board`, `/top`, `/stalled`.
 
-## Web board (optional)
+## Web board (on by default)
 
-A **read-only** web view of the board, behind a single shared password. The bot
-stays the source of truth — claiming/closing still happens in Telegram; the web
-page just displays the same asks (server-rendered HTML, no React). It runs **in
-the same process** as the bot, so there's nothing extra to deploy.
+The web board is the product front door: **sign up → create an org → get a
+one-time connect token + an "add the bot" link → run `/connect <token>` in your
+Telegram group**, and that group gets its own board (in the bot and on the web),
+scoped so each org sees only its own data. Server-rendered HTML, no React; it runs
+**in the same process** as the bot, so there's nothing extra to deploy. The bot
+still owns the writes — claiming/closing happens in Telegram; the web page mirrors
+each org's asks.
 
-It's **off by default**. Enable it by setting `WEB_PASSWORD` in `.env`:
+It's **on by default**. Required config when enabled:
 
 ```bash
-WEB_PASSWORD=pick-a-shared-password
-SESSION_SECRET=$(openssl rand -hex 32)   # required when WEB_PASSWORD is set
+SESSION_SECRET=$(openssl rand -hex 32)   # signs the session cookie
+BOT_USERNAME=YourBot                     # builds the t.me/<bot>?startgroup=true link
 WEB_PORT=8080                            # optional (default 8080)
+SIGNUP_CODE=                             # optional: set to gate signups to invited users
 ```
 
-Then `npm start` and open `http://localhost:8080` — you'll be sent to `/login`,
-and the board appears once you enter the password. Leave `WEB_PASSWORD` blank to
-run the bot only (no port is opened).
+Then `npm start` and open `http://localhost:8080` — you'll be sent to `/login`
+(or `/signup` for a new account). Set `WEB_ENABLED=false` to run the bot only
+(no port is opened).
 
-> 🔒 **Serve it over HTTPS in production.** A shared password over plain HTTP is
-> exposed in transit. Front it with a TLS reverse proxy (Caddy gives automatic
-> HTTPS; nginx works too), then set `WEB_SECURE_COOKIE=true` so the login cookie
-> is only sent over TLS.
+> 🔒 **Serve it over HTTPS in production.** Accounts and connect tokens over plain
+> HTTP are exposed in transit. Front it with a TLS reverse proxy (Caddy gives
+> automatic HTTPS; nginx works too), then set `WEB_SECURE_COOKIE=true` so the
+> session cookie is only sent over TLS.
 
 ## Deploy — AWS 2× EC2 (no Docker)
 
@@ -115,6 +119,6 @@ npm run prisma:migrate    # prisma migrate deploy — builds tables in the exist
 npm run pm2:start && pm2 save && pm2 startup
 ```
 > In production `migrate deploy` does **not** create the database, so on the DB box create it once: `CREATE DATABASE canany OWNER canany;`
-The bot itself is **outbound-only** (long polling), so with the web board off the security group only needs **SSH (22)** — no inbound web port. **If you enable the web board**, also open its port inbound — `WEB_PORT` (e.g. 8080), or 443 when fronted by a TLS proxy.
+The bot itself is **outbound-only** (long polling), so with `WEB_ENABLED=false` the security group only needs **SSH (22)** — no inbound web port. **With the web board on (the default)**, also open its port inbound — `WEB_PORT` (e.g. 8080), or 443 when fronted by a TLS proxy.
 
 > ⚠️ Only one instance may poll at a time. Stop the local bot before starting the one on EC2 (two pollers → Telegram `409 Conflict`).

@@ -1,0 +1,42 @@
+<%- include('partials/head', { title: 'canany — sign up' }) %>
+<%- include('partials/form-styles') %>
+<div class="auth-wrap">
+  <div class="term auth">
+    <div class="term__bar">
+      <span class="dots" aria-hidden="true"><span class="d-now"></span><span class="d-eod"></span><span class="d-norush"></span></span>
+      <span class="term__title"><b>canany</b> — sign up</span>
+    </div>
+    <div class="term__body">
+      <h1 class="prompt"><span class="pfx">canany&nbsp;~&nbsp;%</span> <span class="cmd">signup</span><span class="caret" aria-hidden="true"></span></h1>
+      <p class="lede">Create an account, spin up an org, and connect your Telegram group in two taps.</p>
+      <% if (error) { %>
+        <p class="err"><%= error %></p>
+      <% } %>
+      <form method="post" action="/signup">
+        <div class="row">
+          <label for="email">Email</label>
+          <div class="field">
+            <input id="email" type="email" name="email" value="<%= email %>" placeholder="you@example.com" autofocus autocomplete="email" required>
+          </div>
+        </div>
+        <div class="row">
+          <label for="password">Password</label>
+          <div class="field">
+            <input id="password" type="password" name="password" placeholder="at least 8 characters" autocomplete="new-password" minlength="8" required>
+          </div>
+        </div>
+        <% if (codeRequired) { %>
+        <div class="row">
+          <label for="code">Signup code</label>
+          <div class="field">
+            <input id="code" type="text" name="_code" placeholder="invite code" autocomplete="off" required>
+          </div>
+        </div>
+        <% } %>
+        <button type="submit" class="primary">Create account</button>
+      </form>
+      <p class="alt">Have an account? <a href="/login">Log in →</a></p>
+    </div>
+  </div>
+</div>
+<%- include('partials/foot') %>

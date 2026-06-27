@@ -1,0 +1,38 @@
+<%# Shared styles for the auth + org-new forms (login.ejs, signup.ejs, org-new.ejs)
+    and the styled 404. Part of the "Ink & Signal" terminal design system. %>
+<style>
+  .auth-wrap { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+  .auth { width: 100%; max-width: 440px; }
+  .auth .term__body { padding: 30px clamp(22px, 6vw, 34px) 34px; }
+  .auth .prompt { font-size: clamp(20px, 5vw, 26px); }
+  .auth .lede { margin-top: 12px; font-size: 14px; }
+  .auth form { margin: 24px 0 0; }
+  .auth .row + .row { margin-top: 16px; }
+  .auth label {
+    display: block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin: 0 0 9px;
+  }
+  .field {
+    display: flex; align-items: center; gap: 9px;
+    border: 1px solid var(--line-2); border-radius: 9px; background: var(--void-2);
+    padding: 0 13px; transition: border-color .15s, box-shadow .15s, background .15s;
+  }
+  .field::before { content: "%"; color: var(--violet); font-weight: 800; flex: none; }
+  .field:focus-within { border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-wash); background: var(--panel); }
+  .auth input[type=email], .auth input[type=password], .auth input[type=text] {
+    flex: 1 1 auto; width: 100%; padding: 12px 0; border: 0; outline: none;
+    background: transparent; color: var(--text);
+    font: 500 14px/1 var(--mono); letter-spacing: .04em;
+  }
+  .auth input::placeholder { color: var(--faint); letter-spacing: .12em; }
+  .auth input[type=password]::placeholder { letter-spacing: .3em; }
+  .auth button.primary { width: 100%; justify-content: center; margin-top: 18px; padding: 12px; font-size: 13px; }
+  .auth .alt { margin: 18px 0 0; font-family: var(--sans); font-size: 13px; color: var(--dim); }
+  .auth .alt a { font-weight: 600; }
+  .auth .err {
+    display: flex; align-items: center; gap: 9px; margin: 0 0 18px;
+    color: var(--now); background: rgba(229,96,77,.09); border: 1px solid rgba(229,96,77,.32);
+    border-radius: 9px; padding: 10px 13px; font-size: 13px; font-weight: 500;
+  }
+  .auth .err::before { content: "✗"; font-weight: 800; flex: none; }
+</style>

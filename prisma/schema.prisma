@@ -27,11 +27,79 @@ model Ask {
   tg_topic_id String?
   tg_msg_id   String? // the original ask message
   tg_card_id  String? // the bot's reply card we keep editing
+  // Denormalized org — stamped at createAsk from the group->org lookup. Nullable so
+  // legacy/DM asks keep working; snapshots the org the ask was raised under, so
+  // re-connecting a group to a new org never moves history (see the plan's notes).
+  org_id      Int?
+  org         Org?      @relation(fields: [org_id], references: [id], onDelete: SetNull)
   created_at  DateTime  @default(now())
   claimed_at  DateTime?
   closed_at   DateTime?
 
   @@index([status])
   @@index([created_at])
+  @@index([org_id, status])
+  @@index([org_id, created_at])
   @@map("asks")
+}
+
+// A web account. Owns one or more orgs. Email stored normalized (trim+lowercase).
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  password_hash String
+  created_at    DateTime @default(now())
+  orgs          Org[]
+
+  @@map("users")
+}
+
+// A tenant. Every board (bot + web) is scoped to exactly one org. `origin`
+// distinguishes orgs created through the web ('web') from those the backfill
+// minted for pre-existing Telegram groups ('migrated').
+model Org {
+  id            Int            @id @default(autoincrement())
+  name          String
+  origin        String         @default("web") // 'web' | 'migrated'
+  owner_user_id Int?
+  owner         User?          @relation(fields: [owner_user_id], references: [id])
+  created_at    DateTime       @default(now())
+  groups        Group[]
+  tokens        ConnectToken[]
+  asks          Ask[]
+
+  @@index([owner_user_id])
+  @@map("orgs")
+}
+
+// A Telegram chat linked to an org via /connect. One chat -> exactly one org;
+// tg_chat_id is the upsert key, so re-connecting re-points the same row.
+model Group {
+  id           Int       @id @default(autoincrement())
+  tg_chat_id   String    @unique
+  org_id       Int
+  org          Org       @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  title        String?
+  connected_by String? // tg user id who ran /connect (null if migrated)
+  connected_at DateTime?
+  created_at   DateTime  @default(now())
+
+  @@index([org_id])
+  @@map("groups")
+}
+
+// A one-time, short-lived bearer that /connect burns to link a group to an org.
+// Plaintext (it's short-lived) and single-use (used_at flips on consume).
+model ConnectToken {
+  id              Int       @id @default(autoincrement())
+  token           String    @unique
+  org_id          Int
+  org             Org       @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  expires_at      DateTime
+  used_at         DateTime? // null = still consumable
+  used_by_chat_id String?
+  created_at      DateTime  @default(now())
+
+  @@index([org_id])
+  @@map("connect_tokens")
 }

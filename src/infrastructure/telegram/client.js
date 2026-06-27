@@ -10,6 +10,7 @@ bot.on('polling_error', (err) => console.error('Polling error:', err.message));
 
 async function startPolling() {
   await bot.setMyCommands([
+    { command: 'connect', description: 'Link this group to your org' },
     { command: 'board', description: 'Show the asks board' },
     { command: 'top', description: 'Top builders this month' },
     { command: 'stalled', description: 'Asks open too long' },

@@ -1,0 +1,16 @@
+<%- include('partials/head', { title: title }) %>
+<%- include('partials/form-styles') %>
+<div class="auth-wrap">
+  <div class="term auth">
+    <div class="term__bar">
+      <span class="dots" aria-hidden="true"><span class="d-now"></span><span class="d-eod"></span><span class="d-norush"></span></span>
+      <span class="term__title"><b>canany</b> — 404</span>
+    </div>
+    <div class="term__body">
+      <h1 class="prompt"><span class="pfx">canany&nbsp;~&nbsp;%</span> <span class="cmd">404</span><span class="caret" aria-hidden="true"></span></h1>
+      <p class="lede"><%= message %></p>
+      <p class="alt" style="margin-top:18px;"><a href="/">← back to your board</a></p>
+    </div>
+  </div>
+</div>
+<%- include('partials/foot') %>

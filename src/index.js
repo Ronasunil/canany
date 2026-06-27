@@ -22,13 +22,14 @@ const commands = require('./application/commands');
 
   await startPolling();
 
-  // Optional read-only web board (runs in this same process when WEB_PASSWORD is set).
+  // The web board (signup / orgs / per-org board) runs in this same process,
+  // on by default. Disabled only when WEB_ENABLED=false (pure-bot deploy).
   if (config.web.enabled) {
     const { startWeb } = require('./infrastructure/web/server');
     await startWeb();
     console.log(`✅ web board on http://localhost:${config.web.port}`);
   } else {
-    console.log('Web board disabled (set WEB_PASSWORD to enable).');
+    console.log('Web board disabled (WEB_ENABLED=false).');
   }
 
   console.log('✅ canany is running — post a #ask message, then try /board.');

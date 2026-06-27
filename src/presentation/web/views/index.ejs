@@ -1,4 +1,17 @@
-<%- include('partials/head', { title: 'canany — board' }) %>
+<%- include('partials/head', { title: 'canany — ' + org.name }) %>
+<style>
+  .orgbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 18px 0 0; }
+  .orgbar__label {
+    font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--faint); margin-right: 2px;
+  }
+  .orgbar .orglink {
+    font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--dim);
+    border: 1px dashed var(--line-2); border-radius: 7px; padding: 6px 11px;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  .orgbar .orglink:hover { color: var(--text); border-color: var(--violet-line); background: var(--violet-wash); text-decoration: none; }
+</style>
 <%
   const commands = { board: 'board', top: 'top', stalled: 'stalled' };
   const ledes = {
@@ -13,10 +26,11 @@
 <div class="term">
   <div class="term__bar">
     <span class="dots" aria-hidden="true"><span class="d-now"></span><span class="d-eod"></span><span class="d-norush"></span></span>
-    <span class="term__title"><b>canany</b> — <%= commands[tab] %></span>
+    <span class="term__title"><b>canany</b> · <%= org.name %> — <%= commands[tab] %></span>
     <span class="term__spacer"></span>
     <a class="refresh" href="<%= refreshHref %>" title="Refresh the board" aria-label="Refresh">refresh</a>
     <form method="post" action="/logout" style="margin:0;">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
       <button type="submit" class="exit">exit</button>
     </form>
   </div>
@@ -26,6 +40,17 @@
       if (tab === 'board' && status !== 'all') { %> <span class="flag">--<%= status %></span><% }
     %><span class="caret" aria-hidden="true"></span></h1>
     <p class="lede"><%= ledes[tab] %></p>
+
+    <nav class="orgbar">
+      <% if (orgs.length > 1) { %>
+        <span class="orgbar__label">org</span>
+        <% orgs.forEach(function (o) { %>
+          <a class="flag <%= o.id === org.id ? 'active' : '' %>" href="/?org=<%= o.id %>"><span class="glyph g-all">▸</span><%= o.name %></a>
+        <% }); %>
+      <% } %>
+      <a class="orglink" href="/orgs/<%= org.id %>">manage · connect a group</a>
+      <a class="orglink" href="/orgs/new">+ new org</a>
+    </nav>
 
     <% if (tab === 'board') { %>
       <p class="stat"><b><%= total %></b> asks tracked<% counts.forEach(function (c) { %><span class="sep">·</span><b><%= c.n %></b> <%= c.status %><% }); %></p>

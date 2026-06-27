@@ -3,6 +3,7 @@
 // Slash commands are handled separately in ../commands.js.
 const config = require('../../config');
 const db = require('../../infrastructure/db/asksRepository');
+const groups = require('../../infrastructure/db/groupsRepository');
 const views = require('../../presentation/views');
 const { displayName, threadLink, keyboardFor, threadOpts, parseOutcomePrompt } = require('../../presentation/keyboards');
 const { refreshCard } = require('../cards');
@@ -55,6 +56,19 @@ function register(bot) {
       const askText = rest.trim();
       if (!askText) return; // bare "#ask" with no body
 
+      // An ask must land in a connected group, so it gets stamped with an org and
+      // shows on that org's board. A DM or an unconnected group gets a hint
+      // instead of an orphan (org-less, invisible) ask.
+      if (msg.chat.type === 'private') {
+        await bot.sendMessage(chatId, '#ask works inside a connected group — add the bot to your group and run /connect <token>.', threadOpts(msg));
+        return;
+      }
+      const orgId = await groups.orgIdForChat(chatId);
+      if (orgId == null) {
+        await bot.sendMessage(chatId, "This group isn't linked yet. Run /connect <token> with a token from your org page.", threadOpts(msg));
+        return;
+      }
+
       const asker = displayName(msg.from);
 
       // Effort and urgency start empty: the asker sets urgency and the claimer
@@ -69,6 +83,7 @@ function register(bot) {
         chatId,
         topicId: msg.message_thread_id || null,
         msgId: msg.message_id,
+        orgId,
       });
 
       const sent = await bot.sendMessage(chatId, views.card(row), {
