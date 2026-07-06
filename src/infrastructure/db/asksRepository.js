@@ -43,6 +43,26 @@ async function setCardId(id, cardId) {
   await prisma.ask.update({ where: { id }, data: { tg_card_id: str(cardId) } });
 }
 
+// Insert one attachment row for an ask. Called once per successfully-stored file,
+// so attachment capture stays best-effort per file — one failed upload never sinks
+// the ask. s3_key is null when the file was too large to fetch from Telegram.
+async function addAttachment(askId, att) {
+  return prisma.askAttachment.create({
+    data: {
+      ask_id: askId,
+      kind: att.kind,
+      s3_key: att.s3_key ?? null,
+      tg_file_id: str(att.tg_file_id),
+      tg_file_unique_id: str(att.tg_file_unique_id),
+      file_name: att.file_name ?? null,
+      mime_type: att.mime_type ?? null,
+      file_size: att.file_size ?? null,
+      width: att.width ?? null,
+      height: att.height ?? null,
+    },
+  });
+}
+
 async function getAsk(id) {
   return prisma.ask.findUnique({ where: { id } });
 }
@@ -86,11 +106,13 @@ async function listAsks(orgId) {
     prisma.ask.findMany({
       where: { org_id: orgId, status: { in: ['open', 'claimed'] } },
       orderBy: { created_at: 'asc' },
+      include: { attachments: { orderBy: { id: 'asc' } } },
     }),
     prisma.ask.findMany({
       where: { org_id: orgId, status: 'done' },
       orderBy: { closed_at: 'desc' },
       take: DONE_ON_BOARD,
+      include: { attachments: { orderBy: { id: 'asc' } } },
     }),
   ]);
   const rank = (s) => {
@@ -142,7 +164,7 @@ async function leaderboard(orgId) {
 }
 
 module.exports = {
-  createAsk, setCardId, getAsk, setUrgency, setEffort,
+  createAsk, setCardId, addAttachment, getAsk, setUrgency, setEffort,
   claimAsk, doneAsk, listAsks, stalledAsks,
   leaderboard,
 };
