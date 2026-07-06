@@ -57,6 +57,16 @@ const config = Object.freeze({
     // cookie is only ever sent over TLS.
     secureCookie: process.env.WEB_SECURE_COOKIE === 'true',
   },
+  // Object storage for #ask attachments (see src/infrastructure/storage). When
+  // S3_BUCKET/AWS_REGION are unset, `enabled` is false and attachment capture is
+  // skipped — asks still work text-only, so a pure-bot deploy needs no S3.
+  // AWS credentials are resolved by the SDK's default provider chain (IAM instance
+  // role in prod, AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY locally) — never read here.
+  storage: (() => {
+    const awsRegion = process.env.AWS_REGION || null;
+    const s3Bucket = process.env.S3_BUCKET || null;
+    return { awsRegion, s3Bucket, enabled: Boolean(awsRegion && s3Bucket) };
+  })(),
 });
 
 module.exports = config;
