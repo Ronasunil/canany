@@ -69,6 +69,15 @@
             const marks = { open: '○', claimed: '◑', done: '●' };
             return { key: c.status, label: c.status, glyph: marks[c.status] || '•', g: glyphClass[c.status] || '', n: c.n };
           }));
+        // ISO date (local time, so it never drifts a day like toISOString() would).
+        function fmtDate(d) {
+          if (!d) return null;
+          const t = new Date(d);
+          const y = t.getFullYear();
+          const m = String(t.getMonth() + 1).padStart(2, '0');
+          const day = String(t.getDate()).padStart(2, '0');
+          return `${y}-${m}-${day}`;
+        }
       %>
       <nav class="flags">
         <% filters.forEach(function (f) { %>
@@ -91,8 +100,8 @@
           <table>
             <thead>
               <tr>
-                <th>#</th><th>Ask</th><th>Urgency</th><th>Effort</th>
-                <th>Status</th><th>Who</th><th>Outcome</th>
+                <th>#</th><th>Ask</th><th>Urgency</th><th>Effort</th><th>Date of ask</th>
+                <th>Status</th><th>Who</th><th>Date of Claiming</th><th>Outcome</th>
               </tr>
             </thead>
             <tbody>
@@ -109,8 +118,10 @@
                   </td>
                   <td data-label="Urgency"><% if (r.urgency) { %><span class="urg <%= r.urgency %>"><%= r.urgency %></span><% } else { %><span class="dash">—</span><% } %></td>
                   <td class="num" data-label="Effort"><% if (r.effort) { %><%= r.effort %><% } else { %><span class="dash">—</span><% } %></td>
+                  <td class="num" data-label="Date of ask"><%= fmtDate(r.created_at) %></td>
                   <td data-label="Status"><span class="st <%= r.status %>"><%= r.status %></span></td>
                   <td data-label="Who"><% if (r.claimer) { %><span class="person"><span class="at">@</span><%= r.claimer %></span><% } else { %><span class="dash">—</span><% } %></td>
+                  <td class="num" data-label="Date of Claiming"><% if (r.claimed_at) { %><%= fmtDate(r.claimed_at) %><% } else { %><span class="dash">—</span><% } %></td>
                   <td data-label="Outcome"><% if (r.outcome) { %><span class="outcome"><span class="arr">↳</span><%= r.outcome %></span><% } else { %><span class="dash">—</span><% } %></td>
                 </tr>
               <% }); %>
