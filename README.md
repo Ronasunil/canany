@@ -15,7 +15,12 @@ TELEGRAM (everything lives here)          NODE APP
 - Post `#ask <your request>` in the chat → the bot saves it and replies with a card carrying the action buttons.
 - **Urgency is set by the asker** (🔴 now · 🟡 EOD · 🟢 no-rush); **effort by the claimer** — tap a unit (~mins · ~hrs · ~days · ~weeks) and the bot asks "how many?", giving an exact effort like "3 hrs". Each is owned by the person who actually knows it — no auto-guessing.
 - **✅ Done only works after ✋ Claim** — tapping it early shows "Claim it first". Closing prompts for an outcome.
+- **Attach files** — send a photo/document (or a whole album) captioned `#ask …` and the files are stored in S3 and shown on the web board (optional — see below).
 - **`/board`** current asks (with outcomes) · **`/top`** month's builders · **`/stalled`** asks open > 2 days.
+
+### Attachments (optional)
+
+Files sent with an `#ask` — a photo, a document, or several at once (an album) — are copied from Telegram into a **private S3 bucket** and shown as thumbnails / links on the web board (served via short-lived presigned URLs). To enable, set `AWS_REGION` and `S3_BUCKET` in `.env`; credentials come from the AWS SDK's default chain (an IAM instance role in prod, or `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` locally), and the bucket identity needs `s3:PutObject` + `s3:GetObject`. Leave the vars unset for a text-only deploy. Files over 20 MB (Telegram's bot-download limit) are shown as a "view in Telegram" link instead.
 
 ## Project layout
 
