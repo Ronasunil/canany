@@ -35,6 +35,7 @@ model Ask {
   created_at  DateTime  @default(now())
   claimed_at  DateTime?
   closed_at   DateTime?
+  attachments AskAttachment[]
 
   @@index([status])
   @@index([created_at])
@@ -102,4 +103,26 @@ model ConnectToken {
 
   @@index([org_id])
   @@map("connect_tokens")
+}
+
+// A file attached to an #ask (photo, document, …). The bytes live in S3; we store
+// the object key + Telegram/media metadata. Captured at ask creation from the
+// #ask message (or its album). Cascade-deletes with its ask — no orphan rows.
+model AskAttachment {
+  id                Int      @id @default(autoincrement())
+  ask_id            Int
+  ask               Ask      @relation(fields: [ask_id], references: [id], onDelete: Cascade)
+  kind              String // 'photo' | 'document' | 'video' | 'audio' | 'voice' | 'animation'
+  s3_key            String? // object key in the private bucket; null when the file was >20MB (a bot can't download it from Telegram)
+  tg_file_id        String? // Telegram handle — provenance / re-fetch fallback
+  tg_file_unique_id String? // stable per-file id; part of the S3 key
+  file_name         String?
+  mime_type         String?
+  file_size         Int?
+  width             Int? // photos/videos
+  height            Int?
+  created_at        DateTime @default(now())
+
+  @@index([ask_id])
+  @@map("ask_attachments")
 }
