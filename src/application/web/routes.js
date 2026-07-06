@@ -8,6 +8,7 @@ const config = require('../../config');
 const asks = require('../../infrastructure/db/asksRepository');
 const users = require('../../infrastructure/db/usersRepository');
 const orgs = require('../../infrastructure/db/orgsRepository');
+const storage = require('../../infrastructure/storage/s3');
 const { STATUS_ORDER } = require('../../domain/constants');
 
 const BCRYPT_COST = 10;
@@ -68,6 +69,18 @@ async function loadOwnedOrg(req, res) {
   const org = await orgs.getOrg(id);
   if (!org || org.owner_user_id !== req.user.id) { notFound(res, 'No such org.'); return null; }
   return org;
+}
+
+// Attach a short-lived signed URL to each stored attachment so the browser can
+// load it straight from S3. We only ever sign keys from these rows — which
+// listAsks already scoped to the current org — so this is the whole access-control
+// story (no per-file route to probe). Oversize files (null s3_key) get url:null and
+// the view falls back to the ask's thread link.
+async function signAttachmentUrls(rows) {
+  const canSign = config.storage.enabled;
+  await Promise.all(rows.flatMap((r) => (r.attachments || []).map(async (a) => {
+    a.url = canSign && a.s3_key ? await storage.signedUrl(a.s3_key) : null;
+  })));
 }
 
 function register(app) {
@@ -172,6 +185,7 @@ function register(app) {
         const status = STATUS_FILTERS.includes(req.query.status) ? req.query.status : 'all';
         data.status = status;
         data.rows = status === 'all' ? rows : rows.filter((r) => r.status === status);
+        await signAttachmentUrls(data.rows); // sign only the rows we'll render
       } else if (tab === 'top') {
         // COUNT comes back BigInt via $queryRaw — convert for EJS.
         const raw = await asks.leaderboard(current.id);
