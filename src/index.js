@@ -5,7 +5,9 @@
 const config = require('./config'); // requiring this validates env and exits if BOT_TOKEN/DATABASE_URL are missing.
 
 const { prisma } = require('./infrastructure/db/prisma');
-const { bot, startPolling } = require('./infrastructure/telegram/client');
+const webOnly = config.web.only;
+let bot, startPolling;
+if (!webOnly) ({ bot, startPolling } = require('./infrastructure/telegram/client'));
 const messageHandler = require('./application/handlers/message');
 const callbackHandler = require('./application/handlers/callback');
 const commands = require('./application/commands');
@@ -15,12 +17,14 @@ const commands = require('./application/commands');
   await prisma.$connect();
   console.log('Database connected.');
 
+  if (!webOnly) {
   // Attach all Telegram listeners before polling begins.
   messageHandler.register(bot);
   callbackHandler.register(bot);
   commands.register(bot);
 
   await startPolling();
+  }
 
   // The web board (signup / orgs / per-org board) runs in this same process,
   // on by default. Disabled only when WEB_ENABLED=false (pure-bot deploy).
