@@ -1,93 +1,129 @@
-<%- include('partials/head', { title: 'canany — ' + org.name }) %>
-<style>
-  .org__body { padding: clamp(22px, 4.5vw, 40px); }
-  .org .lede { margin-bottom: 26px; }
-  .step { margin: 0 0 18px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--void-2); }
-  .step h2 {
-    margin: 0 0 6px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--faint); font-weight: 700;
-  }
-  .step h2 .n { color: var(--violet); }
-  .step .hint { font-family: var(--sans); color: var(--dim); font-size: 13.5px; margin: 0 0 14px; line-height: 1.55; }
-  .token { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-  .token code { font-size: 15px; padding: 9px 13px; user-select: all; word-break: break-all; }
-  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-  .muted { color: var(--faint); font-family: var(--sans); font-size: 13px; margin: 0; }
-  .groups { list-style: none; margin: 0; padding: 0; }
-  .groups li {
-    display: flex; gap: 12px; align-items: baseline; padding: 9px 0;
-    border-bottom: 1px solid var(--line); font-size: 13px;
-  }
-  .groups li:last-child { border-bottom: 0; }
-  .groups .gid { color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .viewboard { margin: 16px 0 0; font-family: var(--sans); font-size: 14px; }
-</style>
-<div class="term org">
-  <div class="term__bar">
-    <span class="dots" aria-hidden="true"><span class="d-now"></span><span class="d-eod"></span><span class="d-norush"></span></span>
-    <span class="term__title"><b>canany</b> — <%= org.name %></span>
-    <span class="term__spacer"></span>
-    <a class="refresh" href="/" title="Go to the board" aria-label="Board">board</a>
-    <form method="post" action="/logout" style="margin:0;">
-      <input type="hidden" name="_csrf" value="<%= csrf %>">
-      <button type="submit" class="exit">exit</button>
-    </form>
-  </div>
+<%- include('partials/head', { title: 'Canany - ' + org.name }) %>
+<link rel="stylesheet" href="/connect.css">
 
-  <main class="term__body org__body">
-    <h1 class="prompt"><span class="pfx">canany&nbsp;~&nbsp;%</span> <span class="cmd">connect</span><span class="caret" aria-hidden="true"></span></h1>
-    <p class="lede">Link a Telegram group to <b><%= org.name %></b> in two steps. Once connected, that group's <code>#ask</code>s show up on this org's board.</p>
-
-    <div class="step">
-      <h2><span class="n">1</span> · Add the bot to your group</h2>
-      <p class="hint">Open Telegram and add the bot to the group you want this org to track.</p>
-      <% if (botLink) { %>
-        <a class="btn primary" href="<%= botLink %>" target="_blank" rel="noopener noreferrer">Add the bot to your group</a>
-      <% } else { %>
-        <p class="muted">Set <code>BOT_USERNAME</code> in the server config to show the one-tap add link.</p>
-      <% } %>
+<main class="connect-page">
+  <header class="connect-chrome" aria-label="Organization navigation">
+    <div class="connect-chrome__identity">
+      <img class="connect-traffic" src="/figma/connect/traffic.svg" alt="" aria-hidden="true">
+      <p>Canany <span aria-hidden="true">&gt;</span> <strong><%= org.name %></strong></p>
     </div>
+    <a class="connect-close" href="/" aria-label="Close connection setup and return to the board">
+      <img src="/figma/connect/close.svg" alt="" aria-hidden="true">
+    </a>
+  </header>
 
-    <div class="step">
-      <h2><span class="n">2</span> · Run the connect command</h2>
-      <% if (token) { %>
-        <p class="hint">In that group, send this — the token is one-time and expires, so don't share it publicly:</p>
-        <div class="token">
-          <code>/connect <%= token.token %></code>
+  <section class="connect-surface" aria-labelledby="connect-title">
+    <header class="connect-intro">
+      <h1 id="connect-title">canany ~ connect</h1>
+      <p>Link a Telegram group to <%= org.name %> in two steps. Once connected, that group's <a href="#connected-groups">#asks</a> show up on this org's board.</p>
+    </header>
+
+    <div class="connect-steps">
+      <span class="connect-step-line" aria-hidden="true"></span>
+
+      <article class="connect-step connect-step--bot">
+        <span class="connect-step-number" aria-hidden="true">1</span>
+        <div class="connect-step-layout">
+          <div class="connect-step-main">
+            <span class="connect-step-icon connect-step-icon--bot" aria-hidden="true">
+              <img class="connect-bot-icon" src="/figma/connect/bot.svg" alt="">
+              <img class="connect-plus-icon" src="/figma/connect/plus.svg" alt="">
+            </span>
+            <div class="connect-step-copy">
+              <h2>Add the bot to your group</h2>
+              <p>Open Telegram and add the bot to the group you want this org to track</p>
+            </div>
+          </div>
+
+          <% if (botLink) { %>
+            <a class="connect-action connect-action--primary" href="<%= botLink %>" target="_blank" rel="noopener noreferrer">
+              <img src="/figma/connect/telegram.svg" alt="" aria-hidden="true">
+              <span>Add the bot to your group</span>
+            </a>
+          <% } else { %>
+            <span class="connect-action connect-action--primary is-disabled" aria-disabled="true" title="Set BOT_USERNAME to enable this link">
+              <img src="/figma/connect/telegram.svg" alt="" aria-hidden="true">
+              <span>Add the bot to your group</span>
+            </span>
+          <% } %>
         </div>
-        <div class="actions">
-          <form method="post" action="/orgs/<%= org.id %>/token" style="margin:0;">
-            <input type="hidden" name="_csrf" value="<%= csrf %>">
-            <button type="submit">↻ regenerate token</button>
-          </form>
+      </article>
+
+      <article class="connect-step connect-step--command">
+        <span class="connect-step-number" aria-hidden="true">2</span>
+        <img class="connect-small-chain" src="/figma/connect/small-chain.svg" alt="" aria-hidden="true">
+        <div class="connect-step-layout">
+          <div class="connect-step-main">
+            <span class="connect-step-icon connect-step-icon--chain" aria-hidden="true">
+              <img src="/figma/connect/chain.svg" alt="">
+            </span>
+            <div class="connect-step-copy">
+              <h2>Run the connect command</h2>
+              <% if (token) { %>
+                <p>In that group, send this — the token is one-time and expires, so don't share it publicly:</p>
+              <% } else { %>
+                <p>No active token right now. Generate one, then send the command inside your Telegram group.</p>
+              <% } %>
+            </div>
+          </div>
+
+          <div class="connect-token-actions">
+            <% if (token) { %>
+              <div class="connect-token">
+                <code id="connect-command">/connect <%= token.token %></code>
+                <button class="connect-copy" type="button" data-copy-target="connect-command" aria-label="Copy connect command">
+                  <img src="/figma/connect/copy.svg" alt="" aria-hidden="true">
+                </button>
+              </div>
+            <% } else { %>
+              <div class="connect-token connect-token--empty">
+                <span>No active connect token</span>
+              </div>
+            <% } %>
+
+            <form method="post" action="/orgs/<%= org.id %>/token">
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <button class="connect-action connect-action--secondary" type="submit">
+                <img src="/figma/connect/regenerate.svg" alt="" aria-hidden="true">
+                <span><%= token ? 'Regenerate token' : 'Generate token' %></span>
+              </button>
+            </form>
+          </div>
         </div>
-      <% } else { %>
-        <p class="hint">No active token right now — generate one to connect a group.</p>
-        <form method="post" action="/orgs/<%= org.id %>/token" style="margin:0;">
-          <input type="hidden" name="_csrf" value="<%= csrf %>">
-          <button type="submit" class="primary">Generate connect token</button>
-        </form>
-      <% } %>
+      </article>
+
+      <section class="connect-groups" id="connected-groups" aria-labelledby="connected-title">
+        <img class="connect-tick" src="/figma/connect/tick.svg" alt="" aria-hidden="true">
+        <div class="connect-groups-copy">
+          <h2 id="connected-title">Connected groups</h2>
+          <% if (connectedGroups && connectedGroups.length) { %>
+            <ul class="connect-groups-list">
+              <% connectedGroups.forEach(function (group) { %>
+                <li>
+                  <span><%= group.title ? group.title : 'Connected group' %></span>
+                  <small><%= group.tg_chat_id %></small>
+                </li>
+              <% }); %>
+            </ul>
+          <% } else { %>
+            <p>No groups connected yet — run the command above inside your group.</p>
+          <% } %>
+        </div>
+        <a class="connect-board-link" href="/">
+          <span>View this org's board</span>
+          <img src="/figma/connect/arrow.svg" alt="" aria-hidden="true">
+        </a>
+      </section>
     </div>
 
-    <div class="step">
-      <h2>Connected groups</h2>
-      <% if (connectedGroups && connectedGroups.length) { %>
-        <ul class="groups">
-          <% connectedGroups.forEach(function (g) { %>
-            <li><span class="gid"><%= g.tg_chat_id %></span><span><%= g.title ? g.title : 'connected group' %></span></li>
-          <% }); %>
-        </ul>
-      <% } else { %>
-        <p class="muted">No groups connected yet — run the command above inside your group.</p>
-      <% } %>
-      <p class="viewboard"><a href="/">View this org's board →</a></p>
-    </div>
-  </main>
+    <p class="connect-note">
+      <img src="/figma/connect/info.svg" alt="" aria-hidden="true">
+      <span>connect tokens are one-time &amp; expiring <span aria-hidden="true">·</span> regenerating invalidates the old one</span>
+    </p>
 
-  <div class="term__foot">
-    <span>connect tokens are one-time &amp; expiring</span><span class="sep">·</span>
-    <span>regenerating invalidates the old one</span>
-  </div>
-</div>
+    <p class="connect-copy-status sr-only" role="status" aria-live="polite"></p>
+  </section>
+</main>
+
+<script src="/connect.js" defer></script>
 <%- include('partials/foot') %>
