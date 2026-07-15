@@ -15,6 +15,7 @@ function buildApp() {
   // Server-side rendered HTML via EJS — no client framework, no build step.
   app.set('view engine', 'ejs');
   app.set('views', VIEWS_DIR);
+  app.use(express.static(path.join(__dirname, '..', '..', 'presentation', 'web', 'public')));
 
   // Behind a reverse proxy (the recommended TLS setup) so secure cookies and
   // req.protocol reflect the original https request.
@@ -35,6 +36,13 @@ function buildApp() {
     secure: config.web.secureCookie,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   }));
+
+  // Keep non-remembered logins session-only on every response. Without this,
+  // later CSRF/org updates would reissue them with the middleware's 7-day maxAge.
+  app.use((req, _res, next) => {
+    if (req.session && req.session.remember === false) req.sessionOptions.maxAge = null;
+    next();
+  });
 
   routes.register(app);
 
