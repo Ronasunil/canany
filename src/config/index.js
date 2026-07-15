@@ -10,7 +10,8 @@ function need(key) {
     process.exit(1);
   }
 }
-need('BOT_TOKEN');
+const webOnly = process.env.WEB_ONLY === 'true';
+if (!webOnly) need('BOT_TOKEN');
 need('DATABASE_URL');
 
 // The web UI is now the product front door (signup -> org -> connect token), so
@@ -44,6 +45,7 @@ const config = Object.freeze({
   },
   // The multi-tenant web board: accounts, orgs, and per-org boards (see src/infrastructure/web).
   web: {
+    only: webOnly,
     enabled: webEnabled,
     port: (() => {
       const n = Number(process.env.WEB_PORT);
