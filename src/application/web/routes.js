@@ -104,8 +104,10 @@ function register(app) {
       }
       const email = normalizeEmail(req.body.email);
       const password = String(req.body.password || '');
+      const passwordConfirm = String(req.body.passwordConfirm || '');
       if (!EMAIL_RE.test(email)) return render('Enter a valid email address.');
       if (password.length < 8) return render('Password must be at least 8 characters.');
+      if (password !== passwordConfirm) return render('Passwords do not match.');
 
       if (await users.findUserByEmail(email)) return render('That email is already registered. Log in instead.', 409);
 
@@ -129,22 +131,26 @@ function register(app) {
   // ---- Login ----
   app.get('/login', (req, res) => {
     if (req.session && req.session.uid) return res.redirect('/');
-    res.render('login', { error: null, email: '' });
+    res.render('login', { error: null, email: '', remember: false });
   });
 
   app.post('/login', async (req, res, next) => {
     try {
       const email = normalizeEmail(req.body.email);
       const password = String(req.body.password || '');
+      const remember = req.body.remember === '1';
       // Generic message either way — never reveal whether the email exists.
-      const fail = () => res.status(401).render('login', { error: 'Wrong email or password.', email: req.body.email || '' });
+      const fail = () => res.status(401).render('login', { error: 'Wrong email or password.', email: req.body.email || '', remember });
 
       const user = await users.findUserByEmail(email);
       if (!user) return fail();
       if (!(await bcrypt.compare(password, user.password_hash))) return fail();
 
       req.session = null;
-      req.session = { uid: user.id };
+      // cookie-session clones these options for each request. Explicitly clear
+      // maxAge for a browser-session cookie when Remember me is unchecked.
+      if (!remember) req.sessionOptions.maxAge = null;
+      req.session = { uid: user.id, remember };
       return res.redirect('/');
     } catch (err) { next(err); }
   });
@@ -158,7 +164,7 @@ function register(app) {
   const TABS = ['board', 'top', 'stalled'];
   const STATUS_FILTERS = [...STATUS_ORDER, 'all'];
 
-  app.get('/', requireAuth, async (req, res, next) => {
+  app.get('/', async (req, res, next) => { if (!req.session || !req.session.uid) return res.render('landing', { title: 'canany — ask better, together' }); return requireAuth(req, res, next); }, async (req, res, next) => {
     try {
       const { list, current } = await resolveCurrentOrg(req);
       if (!current) return res.redirect('/orgs/new'); // 0 orgs -> create one first

@@ -1,34 +1,55 @@
-<%- include('partials/head', { title: 'canany — login' }) %>
-<%- include('partials/form-styles') %>
-<div class="auth-wrap">
-  <div class="term auth">
-    <div class="term__bar">
-      <span class="dots" aria-hidden="true"><span class="d-now"></span><span class="d-eod"></span><span class="d-norush"></span></span>
-      <span class="term__title"><b>canany</b> — login</span>
-    </div>
-    <div class="term__body">
-      <h1 class="prompt"><span class="pfx">canany&nbsp;~&nbsp;%</span> <span class="cmd">login</span><span class="caret" aria-hidden="true"></span></h1>
-      <p class="lede">Sign in to your boards. The Telegram bot stays the source of truth — this is where you manage orgs and watch each group's board.</p>
-      <% if (error) { %>
-        <p class="err"><%= error %></p>
-      <% } %>
-      <form method="post" action="/login">
-        <div class="row">
-          <label for="email">Email</label>
-          <div class="field">
-            <input id="email" type="email" name="email" value="<%= email %>" placeholder="you@example.com" autofocus autocomplete="email" required>
+<%- include('partials/head', { title: 'Tegsi - Log in' }) %>
+<link rel="stylesheet" href="/auth.css">
+<main class="auth-page auth-page--login">
+  <section class="auth-panel" aria-labelledby="login-title">
+    <header class="auth-intro">
+      <h1 id="login-title">Log in to Your Account!</h1>
+      <p>Sign in to your boards. The Telegram bot stays the source of truth this is where you manage orgs and watch each group's board.</p>
+    </header>
+
+    <% if (error) { %>
+      <p class="auth-error" role="alert"><%= error %></p>
+    <% } %>
+
+    <form class="auth-form" method="post" action="/login">
+      <div class="auth-fields">
+        <div class="auth-control">
+          <label class="sr-only" for="email">Email</label>
+          <div class="auth-field">
+            <img src="/figma/auth/email.png" alt="" aria-hidden="true">
+            <input id="email" type="email" name="email" value="<%= email %>" placeholder="Email" autofocus autocomplete="email" required>
           </div>
         </div>
-        <div class="row">
-          <label for="password">Password</label>
-          <div class="field">
-            <input id="password" type="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+
+        <div class="auth-control">
+          <label class="sr-only" for="password">Password</label>
+          <div class="auth-field">
+            <img src="/figma/auth/password.png" alt="" aria-hidden="true">
+            <input id="password" type="password" name="password" placeholder="Password" autocomplete="current-password" required>
+            <button class="auth-password-toggle" type="button" data-password-toggle="password" aria-label="Show password" aria-pressed="false">
+              <img src="/figma/auth/eye.png" alt="" aria-hidden="true">
+            </button>
           </div>
         </div>
-        <button type="submit" class="primary">Log in</button>
-      </form>
-      <p class="alt">No account? <a href="/signup">Sign up →</a></p>
-    </div>
-  </div>
-</div>
+      </div>
+
+      <div class="auth-login-options">
+        <label class="auth-remember">
+          <input type="checkbox" name="remember" value="1" <%= remember ? 'checked' : '' %>>
+          <span>Remember me</span>
+        </label>
+        <a class="auth-forgot" href="mailto:support@tegsi.com?subject=Password%20reset">Forgot Password?</a>
+      </div>
+
+      <button class="auth-submit" type="submit">Log in</button>
+    </form>
+
+    <p class="auth-alt">Don’t have an account? <a href="/signup">Sign Up</a></p>
+  </section>
+
+  <figure class="auth-preview" aria-hidden="true">
+    <img src="/figma/auth/dashboard-preview.png" alt="">
+  </figure>
+</main>
+<script src="/auth.js" defer></script>
 <%- include('partials/foot') %>
