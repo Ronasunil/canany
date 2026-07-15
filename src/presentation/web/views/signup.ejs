@@ -1,42 +1,68 @@
-<%- include('partials/head', { title: 'canany — sign up' }) %>
-<%- include('partials/form-styles') %>
-<div class="auth-wrap">
-  <div class="term auth">
-    <div class="term__bar">
-      <span class="dots" aria-hidden="true"><span class="d-now"></span><span class="d-eod"></span><span class="d-norush"></span></span>
-      <span class="term__title"><b>canany</b> — sign up</span>
-    </div>
-    <div class="term__body">
-      <h1 class="prompt"><span class="pfx">canany&nbsp;~&nbsp;%</span> <span class="cmd">signup</span><span class="caret" aria-hidden="true"></span></h1>
-      <p class="lede">Create an account, spin up an org, and connect your Telegram group in two taps.</p>
-      <% if (error) { %>
-        <p class="err"><%= error %></p>
-      <% } %>
-      <form method="post" action="/signup">
-        <div class="row">
-          <label for="email">Email</label>
-          <div class="field">
-            <input id="email" type="email" name="email" value="<%= email %>" placeholder="you@example.com" autofocus autocomplete="email" required>
+<%- include('partials/head', { title: 'Tegsi - Sign up' }) %>
+<link rel="stylesheet" href="/auth.css">
+<main class="auth-page auth-page--signup">
+  <section class="auth-panel" aria-labelledby="signup-title">
+    <header class="auth-intro">
+      <h1 id="signup-title">Sign up to Your Account!</h1>
+      <p>Create an account, spin up an org, and connect your Telegram group in two taps.</p>
+    </header>
+
+    <% if (error) { %>
+      <p class="auth-error" role="alert"><%= error %></p>
+    <% } %>
+
+    <form class="auth-form" method="post" action="/signup">
+      <div class="auth-fields">
+        <div class="auth-control">
+          <label class="sr-only" for="email">Email</label>
+          <div class="auth-field">
+            <img src="/figma/auth/email.png" alt="" aria-hidden="true">
+            <input id="email" type="email" name="email" value="<%= email %>" placeholder="Email" autofocus autocomplete="email" required>
           </div>
         </div>
-        <div class="row">
-          <label for="password">Password</label>
-          <div class="field">
-            <input id="password" type="password" name="password" placeholder="at least 8 characters" autocomplete="new-password" minlength="8" required>
+
+        <div class="auth-control">
+          <label class="sr-only" for="password">Password</label>
+          <div class="auth-field">
+            <img src="/figma/auth/password.png" alt="" aria-hidden="true">
+            <input id="password" type="password" name="password" placeholder="Password" autocomplete="new-password" minlength="8" required>
+            <button class="auth-password-toggle" type="button" data-password-toggle="password" aria-label="Show password" aria-pressed="false">
+              <img src="/figma/auth/eye.png" alt="" aria-hidden="true">
+            </button>
           </div>
         </div>
+
+        <div class="auth-control">
+          <label class="sr-only" for="passwordConfirm">Confirm Password</label>
+          <div class="auth-field">
+            <img src="/figma/auth/password.png" alt="" aria-hidden="true">
+            <input id="passwordConfirm" type="password" name="passwordConfirm" placeholder="Confirm Password" autocomplete="new-password" minlength="8" required>
+            <button class="auth-password-toggle" type="button" data-password-toggle="passwordConfirm" aria-label="Show confirmed password" aria-pressed="false">
+              <img src="/figma/auth/eye.png" alt="" aria-hidden="true">
+            </button>
+          </div>
+        </div>
+
         <% if (codeRequired) { %>
-        <div class="row">
-          <label for="code">Signup code</label>
-          <div class="field">
-            <input id="code" type="text" name="_code" placeholder="invite code" autocomplete="off" required>
+          <div class="auth-control">
+            <label class="sr-only" for="code">Signup code</label>
+            <div class="auth-field">
+              <img src="/figma/auth/password.png" alt="" aria-hidden="true">
+              <input id="code" type="text" name="_code" placeholder="Signup code" autocomplete="off" required>
+            </div>
           </div>
-        </div>
         <% } %>
-        <button type="submit" class="primary">Create account</button>
-      </form>
-      <p class="alt">Have an account? <a href="/login">Log in →</a></p>
-    </div>
-  </div>
-</div>
+      </div>
+
+      <button class="auth-submit" type="submit">Sign up</button>
+    </form>
+
+    <p class="auth-alt">Already have an Account? <a href="/login">Log in</a></p>
+  </section>
+
+  <figure class="auth-preview" aria-hidden="true">
+    <img src="/figma/auth/dashboard-preview.png" alt="">
+  </figure>
+</main>
+<script src="/auth.js" defer></script>
 <%- include('partials/foot') %>
