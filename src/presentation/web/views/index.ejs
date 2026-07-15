@@ -1,227 +1,243 @@
-<%- include('partials/head', { title: 'canany — ' + org.name }) %>
-<style>
-  .orgbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 18px 0 0; }
-  .orgbar__label {
-    font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .14em;
-    text-transform: uppercase; color: var(--faint); margin-right: 2px;
-  }
-  .orgbar .orglink {
-    font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--dim);
-    border: 1px dashed var(--line-2); border-radius: 7px; padding: 6px 11px;
-    transition: color .15s, border-color .15s, background .15s;
-  }
-  .orgbar .orglink:hover { color: var(--text); border-color: var(--violet-line); background: var(--violet-wash); text-decoration: none; }
-
-  /* Attachments on an ask row — thumbnails + file chips in the command aesthetic. */
-  .attachments { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
-  .att-thumb {
-    display: block; line-height: 0; border: 1px solid var(--line-2); border-radius: 6px;
-    overflow: hidden; transition: border-color .15s;
-  }
-  .att-thumb:hover { border-color: var(--violet-line); }
-  .att-thumb img { width: 46px; height: 46px; object-fit: cover; display: block; }
-  .att-file {
-    font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--dim);
-    border: 1px dashed var(--line-2); border-radius: 6px; padding: 4px 8px;
-    transition: color .15s, border-color .15s, background .15s;
-  }
-  .att-file:hover { color: var(--text); border-color: var(--violet-line); background: var(--violet-wash); text-decoration: none; }
-  .att-tg { color: var(--faint); }
-</style>
+<%- include('partials/head', { title: 'Canany - ' + org.name }) %>
+<link rel="stylesheet" href="/board.css">
 <%
   const commands = { board: 'board', top: 'top', stalled: 'stalled' };
   const ledes = {
-    board: "Everything anyone's asked for — what's open, who grabbed it, and how it landed.",
+    board: "Everything anyone's asked for — what's open, who grabbed it, and how it landed",
     top: "Who's shipping and raising the most this month.",
     stalled: 'Open asks that have been waiting a while and could use a hand.'
   };
   const glyphClass = { open: 'g-open', claimed: 'g-claimed', done: 'g-done' };
-  // A plain link back to the current view — re-fetches the data without client JS.
-  const refreshHref = tab === 'board' ? '/?tab=board&status=' + status : '/?tab=' + tab;
+
+  function fmtDate(value) {
+    if (!value) return null;
+    const date = new Date(value);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return year + "-" + month + "-" + day;
+  }
 %>
-<div class="term">
-  <div class="term__bar">
-    <span class="dots" aria-hidden="true"><span class="d-now"></span><span class="d-eod"></span><span class="d-norush"></span></span>
-    <span class="term__title"><b>canany</b> · <%= org.name %> — <%= commands[tab] %></span>
-    <span class="term__spacer"></span>
-    <a class="refresh" href="<%= refreshHref %>" title="Refresh the board" aria-label="Refresh">refresh</a>
-    <form method="post" action="/logout" style="margin:0;">
-      <input type="hidden" name="_csrf" value="<%= csrf %>">
-      <button type="submit" class="exit">exit</button>
-    </form>
-  </div>
 
-  <main class="term__body">
-    <h1 class="prompt"><span class="pfx">canany&nbsp;~&nbsp;%</span> <span class="cmd"><%= commands[tab] %></span><%
-      if (tab === 'board' && status !== 'all') { %> <span class="flag">--<%= status %></span><% }
-    %><span class="caret" aria-hidden="true"></span></h1>
-    <p class="lede"><%= ledes[tab] %></p>
-
-    <nav class="orgbar">
-      <% if (orgs.length > 1) { %>
-        <span class="orgbar__label">org</span>
-        <% orgs.forEach(function (o) { %>
-          <a class="flag <%= o.id === org.id ? 'active' : '' %>" href="/?org=<%= o.id %>"><span class="glyph g-all">▸</span><%= o.name %></a>
-        <% }); %>
-      <% } %>
-      <a class="orglink" href="/orgs/<%= org.id %>">manage · connect a group</a>
-      <a class="orglink" href="/orgs/new">+ new org</a>
-    </nav>
-
-    <% if (tab === 'board') { %>
-      <p class="stat"><b><%= total %></b> asks tracked<% counts.forEach(function (c) { %><span class="sep">·</span><b><%= c.n %></b> <%= c.status %><% }); %></p>
+<main class="board-page">
+  <header class="board-chrome" aria-label="Board navigation">
+    <% if (orgs.length > 1) { %>
+      <details class="board-org-switcher">
+        <summary class="board-chrome__identity" aria-label="Switch organization">
+          <img class="board-traffic" src="/figma/board/traffic.svg" alt="" aria-hidden="true">
+          <p>Canany <span aria-hidden="true">&gt;</span> <strong><%= org.name %></strong> <em><%= commands[tab] %></em></p>
+        </summary>
+        <nav class="board-org-menu" aria-label="Organizations">
+          <% orgs.forEach(function (item) { %>
+            <a class="<%= item.id === org.id ? 'is-current' : '' %>" href="/?org=<%= item.id %>"><%= item.name %></a>
+          <% }); %>
+        </nav>
+      </details>
+    <% } else { %>
+      <div class="board-chrome__identity">
+        <img class="board-traffic" src="/figma/board/traffic.svg" alt="" aria-hidden="true">
+        <p>Canany <span aria-hidden="true">&gt;</span> <strong><%= org.name %></strong> <em><%= commands[tab] %></em></p>
+      </div>
     <% } %>
 
-    <nav class="tabs">
-      <a class="tab <%= tab === 'board' ? 'active' : '' %>" href="/?tab=board">board</a>
-      <a class="tab <%= tab === 'top' ? 'active' : '' %>" href="/?tab=top">top</a>
-      <a class="tab <%= tab === 'stalled' ? 'active' : '' %>" href="/?tab=stalled">stalled</a>
+    <form class="board-close-form" method="post" action="/logout">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <button class="board-close" type="submit" aria-label="Log out">
+        <img src="/figma/board/close.svg" alt="" aria-hidden="true">
+      </button>
+    </form>
+  </header>
+
+  <section class="board-surface" aria-labelledby="board-title">
+    <header class="board-hero">
+      <div class="board-intro">
+        <h1 id="board-title">canany ~ <%= commands[tab] %></h1>
+        <p><%= ledes[tab] %></p>
+      </div>
+
+      <nav class="board-actions" aria-label="Organization actions">
+        <a class="board-action board-action--manage" href="/orgs/<%= org.id %>">
+          <img src="/figma/board/manage.svg" alt="" aria-hidden="true">
+          <span>Manage Connect a group</span>
+        </a>
+        <a class="board-action board-action--new" href="/orgs/new">
+          <img src="/figma/board/new-org.svg" alt="" aria-hidden="true">
+          <span>New org</span>
+        </a>
+      </nav>
+    </header>
+
+    <nav class="board-tabs" aria-label="Board views">
+      <a class="board-tab <%= tab === 'board' ? 'is-active' : '' %>" href="/?tab=board">
+        <span class="board-tab-icon board-tab-icon--board" aria-hidden="true"></span>
+        <span>Board</span>
+      </a>
+      <a class="board-tab <%= tab === 'top' ? 'is-active' : '' %>" href="/?tab=top">
+        <span class="board-tab-icon board-tab-icon--top" aria-hidden="true"></span>
+        <span>Top</span>
+      </a>
+      <a class="board-tab <%= tab === 'stalled' ? 'is-active' : '' %>" href="/?tab=stalled">
+        <span class="board-tab-icon board-tab-icon--stalled" aria-hidden="true"></span>
+        <span>Stalled</span>
+      </a>
     </nav>
 
     <% if (tab === 'board') { %>
       <%
-        const filters = [{ key: 'all', label: 'all', glyph: '▸', g: 'g-all', n: total }]
-          .concat(counts.map(function (c) {
-            const marks = { open: '○', claimed: '◑', done: '●' };
-            return { key: c.status, label: c.status, glyph: marks[c.status] || '•', g: glyphClass[c.status] || '', n: c.n };
-          }));
-        // ISO date (local time, so it never drifts a day like toISOString() would).
-        function fmtDate(d) {
-          if (!d) return null;
-          const t = new Date(d);
-          const y = t.getFullYear();
-          const m = String(t.getMonth() + 1).padStart(2, '0');
-          const day = String(t.getDate()).padStart(2, '0');
-          return `${y}-${m}-${day}`;
-        }
+        const filters = [{ key: 'all', label: 'All', n: total }].concat(counts.map(function (count) {
+          return {
+            key: count.status,
+            label: count.status.charAt(0).toUpperCase() + count.status.slice(1),
+            n: count.n
+          };
+        }));
       %>
-      <nav class="flags">
-        <% filters.forEach(function (f) { %>
-          <a class="flag <%= status === f.key ? 'active' : '' %>" href="/?tab=board&status=<%= f.key %>"><span class="glyph <%= f.g %>"><%= f.glyph %></span><%= f.label %> <span class="n"><%= f.n %></span></a>
+      <nav class="board-filters" aria-label="Filter asks by status">
+        <% filters.forEach(function (filter) { %>
+          <a class="board-filter board-filter--<%= filter.key %> <%= status === filter.key ? 'is-active' : '' %>" href="/?tab=board&status=<%= filter.key %>">
+            <span><%= filter.label %></span>
+            <b><%= filter.n %></b>
+          </a>
         <% }); %>
       </nav>
 
       <% if (!rows.length) { %>
-        <div class="empty">
-          <% if (total === 0) { %>
-            <p class="lead">No asks yet</p>
-            <p>Post one with <code>#ask …</code> in Telegram and it shows up here.</p>
-          <% } else { %>
-            <p class="lead">Nothing <%= status %></p>
-            <p>No <%= status %> asks right now. Try another filter.</p>
-          <% } %>
-        </div>
+        <section class="board-panel board-panel--empty" aria-labelledby="board-empty-title">
+          <div class="board-empty-visual" aria-hidden="true">
+            <img src="/figma/board/empty-state.png" alt="">
+          </div>
+          <div class="board-empty-copy">
+            <% if (total === 0) { %>
+              <h2 id="board-empty-title">No ask yet</h2>
+              <p>Post one with <strong>#ask</strong> in Telegram and it shows up here.</p>
+            <% } else { %>
+              <h2 id="board-empty-title">Nothing <%= status %></h2>
+              <p>No <%= status %> asks right now. Try another filter.</p>
+            <% } %>
+          </div>
+        </section>
       <% } else { %>
-        <div class="grid"><div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th><th>Ask</th><th>Urgency</th><th>Effort</th><th>Date of ask</th>
-                <th>Status</th><th>Who</th><th>Date of Claiming</th><th>Outcome</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% rows.forEach(function (r) { %>
+        <section class="board-panel board-panel--table" aria-label="Tracked asks">
+          <div class="board-table-wrap">
+            <table class="board-table">
+              <thead>
                 <tr>
-                  <td class="id" data-label="#"><%= String(r.id).padStart(2, '0') %></td>
-                  <td data-label="Ask">
-                    <% if (r.thread_link) { %>
-                      <a class="ask-text" href="<%= r.thread_link %>" target="_blank" rel="noopener noreferrer"><%= r.ask %></a>
-                    <% } else { %>
-                      <span class="ask-text"><%= r.ask %></span>
-                    <% } %>
-                    <% if (r.asker) { %><div class="from">from @<%= r.asker %></div><% } %>
-                    <% if (r.attachments && r.attachments.length) { %>
-                      <div class="attachments">
-                        <% r.attachments.forEach(function (a) { %>
-                          <% const isImg = a.kind === 'photo' || (a.mime_type && a.mime_type.indexOf('image/') === 0); %>
-                          <% if (a.url && isImg) { %>
-                            <a class="att-thumb" href="<%= a.url %>" target="_blank" rel="noopener noreferrer"><img src="<%= a.url %>" alt="<%= a.file_name || 'attachment' %>" loading="lazy"></a>
-                          <% } else if (a.url) { %>
-                            <a class="att-file" href="<%= a.url %>" target="_blank" rel="noopener noreferrer">📎 <%= a.file_name || a.kind %></a>
-                          <% } else if (r.thread_link) { %>
-                            <a class="att-file att-tg" href="<%= r.thread_link %>" target="_blank" rel="noopener noreferrer">📎 <%= a.file_name || a.kind %> · view in Telegram</a>
-                          <% } else { %>
-                            <span class="att-file att-tg">📎 <%= a.file_name || a.kind %></span>
-                          <% } %>
-                        <% }); %>
-                      </div>
-                    <% } %>
-                  </td>
-                  <td data-label="Urgency"><% if (r.urgency) { %><span class="urg <%= r.urgency %>"><%= r.urgency %></span><% } else { %><span class="dash">—</span><% } %></td>
-                  <td class="num" data-label="Effort"><% if (r.effort) { %><%= r.effort %><% } else { %><span class="dash">—</span><% } %></td>
-                  <td class="num" data-label="Date of ask"><%= fmtDate(r.created_at) %></td>
-                  <td data-label="Status"><span class="st <%= r.status %>"><%= r.status %></span></td>
-                  <td data-label="Who"><% if (r.claimer) { %><span class="person"><span class="at">@</span><%= r.claimer %></span><% } else { %><span class="dash">—</span><% } %></td>
-                  <td class="num" data-label="Date of Claiming"><% if (r.claimed_at) { %><%= fmtDate(r.claimed_at) %><% } else { %><span class="dash">—</span><% } %></td>
-                  <td data-label="Outcome"><% if (r.outcome) { %><span class="outcome"><span class="arr">↳</span><%= r.outcome %></span><% } else { %><span class="dash">—</span><% } %></td>
+                  <th>#</th>
+                  <th>Ask</th>
+                  <th>Urgency</th>
+                  <th>Effort</th>
+                  <th>Date of ask</th>
+                  <th>Status</th>
+                  <th>Who</th>
+                  <th>Date of claiming</th>
+                  <th>Outcome</th>
                 </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div></div>
+              </thead>
+              <tbody>
+                <% rows.forEach(function (row) { %>
+                  <tr>
+                    <td class="board-id" data-label="#"><%= String(row.id).padStart(2, '0') %></td>
+                    <td class="board-ask-cell" data-label="Ask">
+                      <% if (row.thread_link) { %>
+                        <a class="board-ask-text" href="<%= row.thread_link %>" target="_blank" rel="noopener noreferrer"><%= row.ask %></a>
+                      <% } else { %>
+                        <span class="board-ask-text"><%= row.ask %></span>
+                      <% } %>
+                      <% if (row.asker) { %><small class="board-from">from @<%= row.asker %></small><% } %>
+                      <% if (row.attachments && row.attachments.length) { %>
+                        <div class="board-attachments">
+                          <% row.attachments.forEach(function (attachment) { %>
+                            <% const isImage = attachment.kind === 'photo' || (attachment.mime_type && attachment.mime_type.indexOf('image/') === 0); %>
+                            <% if (attachment.url && isImage) { %>
+                              <a class="board-attachment-thumb" href="<%= attachment.url %>" target="_blank" rel="noopener noreferrer">
+                                <img src="<%= attachment.url %>" alt="<%= attachment.file_name || 'Ask attachment' %>" loading="lazy">
+                              </a>
+                            <% } else if (attachment.url) { %>
+                              <a class="board-attachment-file" href="<%= attachment.url %>" target="_blank" rel="noopener noreferrer"><%= attachment.file_name || attachment.kind %></a>
+                            <% } else if (row.thread_link) { %>
+                              <a class="board-attachment-file" href="<%= row.thread_link %>" target="_blank" rel="noopener noreferrer"><%= attachment.file_name || attachment.kind %> in Telegram</a>
+                            <% } else { %>
+                              <span class="board-attachment-file"><%= attachment.file_name || attachment.kind %></span>
+                            <% } %>
+                          <% }); %>
+                        </div>
+                      <% } %>
+                    </td>
+                    <td data-label="Urgency"><% if (row.urgency) { %><span class="board-urgency <%= row.urgency %>"><%= row.urgency %></span><% } else { %><span class="board-dash">-</span><% } %></td>
+                    <td class="board-num" data-label="Effort"><%= row.effort || '-' %></td>
+                    <td class="board-num" data-label="Date of ask"><%= fmtDate(row.created_at) %></td>
+                    <td data-label="Status"><span class="board-status <%= row.status %>"><%= row.status %></span></td>
+                    <td data-label="Who"><% if (row.claimer) { %><span class="board-person">@<%= row.claimer %></span><% } else { %><span class="board-dash">-</span><% } %></td>
+                    <td class="board-num" data-label="Date of claiming"><%= row.claimed_at ? fmtDate(row.claimed_at) : '-' %></td>
+                    <td data-label="Outcome"><% if (row.outcome) { %><span class="board-outcome"><%= row.outcome %></span><% } else { %><span class="board-dash">-</span><% } %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </section>
       <% } %>
 
     <% } else if (tab === 'top') { %>
       <% if (!builders.length) { %>
-        <div class="empty">
-          <p class="lead">No closed asks yet</p>
-          <p>The leaderboard fills in as asks get claimed and shipped.</p>
-        </div>
+        <section class="board-panel board-panel--empty board-panel--direct" aria-labelledby="top-empty-title">
+          <div class="board-empty-visual" aria-hidden="true"><img src="/figma/board/empty-state.png" alt=""></div>
+          <div class="board-empty-copy">
+            <h2 id="top-empty-title">No closed asks yet</h2>
+            <p>The leaderboard fills in as asks get claimed and shipped.</p>
+          </div>
+        </section>
       <% } else { %>
-        <div class="grid"><div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Rank</th><th>Builder</th><th>Shipped</th><th>Raised</th></tr>
-            </thead>
-            <tbody>
-              <% builders.forEach(function (b, i) { %>
-                <tr>
-                  <td data-label="Rank"><span class="rank r<%= i + 1 %>"><%= i + 1 %></span></td>
-                  <td data-label="Builder"><span class="person"><span class="at">@</span><%= b.person %></span></td>
-                  <td class="num" data-label="Shipped"><%= b.shipped %></td>
-                  <td class="num" data-label="Raised"><%= b.raised %></td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div></div>
+        <section class="board-panel board-panel--table board-panel--direct" aria-label="Top contributors">
+          <div class="board-table-wrap">
+            <table class="board-table board-table--compact">
+              <thead><tr><th>Rank</th><th>Builder</th><th>Shipped</th><th>Raised</th></tr></thead>
+              <tbody>
+                <% builders.forEach(function (builder, index) { %>
+                  <tr>
+                    <td data-label="Rank"><span class="board-rank"><%= index + 1 %></span></td>
+                    <td data-label="Builder"><span class="board-person">@<%= builder.person %></span></td>
+                    <td class="board-num" data-label="Shipped"><%= builder.shipped %></td>
+                    <td class="board-num" data-label="Raised"><%= builder.raised %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </section>
       <% } %>
 
     <% } else { %>
-      <p class="summary">Open longer than <%= days %> day<%= days === 1 ? '' : 's' %> — <%= stalled.length %> waiting</p>
       <% if (!stalled.length) { %>
-        <div class="empty">
-          <p class="lead">All caught up</p>
-          <p>Nothing has been open longer than <%= days %> day<%= days === 1 ? '' : 's' %>.</p>
-        </div>
+        <section class="board-panel board-panel--empty board-panel--direct" aria-labelledby="stalled-empty-title">
+          <div class="board-empty-visual" aria-hidden="true"><img src="/figma/board/empty-state.png" alt=""></div>
+          <div class="board-empty-copy">
+            <h2 id="stalled-empty-title">All caught up</h2>
+            <p>Nothing has been open longer than <%= days %> day<%= days === 1 ? '' : 's' %>.</p>
+          </div>
+        </section>
       <% } else { %>
-        <div class="grid"><div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>#</th><th>Ask</th><th>Age</th><th>Status</th><th>Asker</th></tr>
-            </thead>
-            <tbody>
-              <% stalled.forEach(function (r) { %>
-                <tr>
-                  <td class="id" data-label="#"><%= String(r.id).padStart(2, '0') %></td>
-                  <td data-label="Ask"><span class="ask-text"><%= r.ask %></span></td>
-                  <td class="num" data-label="Age"><%= r.ageDays %>d</td>
-                  <td data-label="Status"><span class="st <%= r.status %>"><%= r.status %></span></td>
-                  <td data-label="Asker"><% if (r.asker) { %><span class="person"><span class="at">@</span><%= r.asker %></span><% } else { %><span class="dash">—</span><% } %></td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div></div>
+        <section class="board-panel board-panel--table board-panel--direct" aria-labelledby="stalled-title">
+          <h2 class="board-panel-title" id="stalled-title">Open longer than <%= days %> day<%= days === 1 ? '' : 's' %>. <%= stalled.length %> waiting.</h2>
+          <div class="board-table-wrap">
+            <table class="board-table">
+              <thead><tr><th>#</th><th>Ask</th><th>Age</th><th>Status</th><th>Asker</th></tr></thead>
+              <tbody>
+                <% stalled.forEach(function (row) { %>
+                  <tr>
+                    <td class="board-id" data-label="#"><%= String(row.id).padStart(2, '0') %></td>
+                    <td data-label="Ask"><span class="board-ask-text"><%= row.ask %></span></td>
+                    <td class="board-num" data-label="Age"><%= row.ageDays %>d</td>
+                    <td data-label="Status"><span class="board-status <%= row.status %>"><%= row.status %></span></td>
+                    <td data-label="Asker"><%= row.asker ? '@' + row.asker : '-' %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </section>
       <% } %>
     <% } %>
-  </main>
-
-  <div class="term__foot">
-    <span>read-only mirror</span><span class="sep">·</span>
-    <span>the Telegram bot is the source of truth</span><span class="sep">·</span>
-    <span>claim &amp; close happen in chat</span>
-  </div>
-</div>
+  </section>
+</main>
 <%- include('partials/foot') %>
