@@ -35,7 +35,7 @@ if (header && menuButton && mobileNavigation) {
     if (event.key === 'Escape' && !mobileNavigation.hidden) closeMenu({ restoreFocus: true });
   });
 
-  const desktopQuery = window.matchMedia('(min-width: 621px)');
+  const desktopQuery = window.matchMedia('(min-width: 841px)');
   const handleDesktopChange = (event) => {
     if (event.matches) closeMenu();
   };
