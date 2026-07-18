@@ -13,9 +13,15 @@ const callbackHandler = require('./application/handlers/callback');
 const commands = require('./application/commands');
 
 (async () => {
-  // Fail fast with a clear error if the database isn't reachable / created yet.
-  await prisma.$connect();
-  console.log('Database connected.');
+  // A landing-page preview needs neither Telegram polling nor PostgreSQL. Keep
+  // normal and bot deployments fail-fast, but allow WEB_ONLY=true to serve the
+  // public web UI even when a local database is not running.
+  if (!webOnly) {
+    await prisma.$connect();
+    console.log('Database connected.');
+  } else {
+    console.log('Web-only mode: Telegram polling and database startup skipped.');
+  }
 
   if (!webOnly) {
   // Attach all Telegram listeners before polling begins.
