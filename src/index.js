@@ -42,7 +42,9 @@ const commands = require('./application/commands');
     console.log('Web board disabled (WEB_ENABLED=false).');
   }
 
-  console.log('✅ canany is running — post a #ask message, then try /board.');
+  console.log(webOnly
+    ? '✅ web preview is running — Telegram bot is disabled.'
+    : '✅ canany is running — post a #ask message, then try /board.');
 })().catch((err) => {
   console.error('Startup failed:', err.message);
   process.exit(1);
