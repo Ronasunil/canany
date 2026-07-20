@@ -127,7 +127,7 @@ body {
 }
 .button-primary { width: 225px; padding: 0 19px 0 20px; background: var(--tg-blue); color: #fff !important; }
 .tegsi-page .button-light { width: 172px; padding: 0 17px; background: #fff; color: #000; }
-.button-light span { font-size: 23px; line-height: 1; }
+.button-light span { font-size: 23px; line-height: 1; transform: translateY(-1px); }
 
 /* Shared section typography */
 .section { margin-right: auto; margin-left: auto; }
