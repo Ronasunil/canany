@@ -631,7 +631,7 @@ body {
   .engine-section::before { top: 205px; }
   .engine-section::after { top: auto; bottom: -10px; }
   .engine-section::before,
-  .engine-section::after { opacity: .72; }
+  .engine-section::after { opacity: .48; }
   .engine-section .section-heading,
   .engine-section .section-heading h2,
   .engine-section .section-heading > p { width: 100%; min-width: 0; max-width: 100%; overflow-wrap: break-word; }
